@@ -1,3 +1,12 @@
+import re
+
+def __main__():
+  arquivo = read_file('./test.txt')
+  arquivo = clean(arquivo)
+  print(arquivo)
+
+# FUNÇÕES DO PROGRAMA  
+  # Lê o arquivo e retorna o conteúdo
 def read_file(file):
   try:
     with open(file, 'r') as file:
@@ -12,15 +21,16 @@ def read_file(file):
       print(f"Ocorreu um erro: {e}")
       return None
 
+  # Limpa o arquivo
 def clean(file):
-  file = file.replace('\n', '').replace(' ', '')
-
+  file = file.replace('\n', '').replace(' ', '').replace('\t', '')
+  file = re.sub(r'\{.*?\}', '', file) 
   return file
 
 def handle_text(file):
   pass
-def handle_attr(file):
+
+def handle():
   pass
 
-arquivo = read_file('./test.txt')
-print(arquivo)
+__main__()
