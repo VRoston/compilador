@@ -29,7 +29,7 @@ KEYWORDS = {
 
 def main():
     try:
-        nome_arquivo_entrada = './compilador/test.txt'
+        nome_arquivo_entrada = './test.txt'
         nome_arquivo_saida = "tabela_simbolos.txt"
 
         with open(nome_arquivo_entrada, 'r') as file, open(nome_arquivo_saida, 'w') as out:
@@ -51,6 +51,7 @@ def main():
                 if char == '{':
                     while char != '}' and char:
                         char = file.read(1)
+                    continue
 
                 token = get_token(char, file)
      
