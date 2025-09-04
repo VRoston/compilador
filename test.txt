@@ -1,24 +1,3 @@
-{comentario aberto sem fechar
-programa123
-123abc
-id!d
-:=:=:
-<><=>>==!=!
-(())((,))
-;,,;;
-{comentario {aninhado ainda comentario
-id_com_acentuação
-123_456
-@ # % &
-"string"
-'char'
-idComNumero123eMais
-{comentario fechado
-id__com__muitos__underlines
-idCom$imbolo
-:=:= := =:=
-}
-
-se  contador > 10  { exemplo de comentário } 
-  entao  escreva (contador)  
-  senao   escreva (x);
+ se  contador > 10  { exemplo de comentário } 
+entao  escreva (contador)  
+senao   escreva (x);

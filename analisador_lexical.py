@@ -49,8 +49,15 @@ def main():
                     continue
 
                 if char == '{':
-                    while char != '}' and char:
+                    comentario_fechado = False
+                    while char:
                         char = file.read(1)
+                        if char == '}':
+                            comentario_fechado = True
+                            break
+                    if not comentario_fechado:
+                        token = Token("{", "serro")
+                        out.write(f"{token.lexema:<20} | {token.simbolo:<20}\n")
                     continue
 
                 token = get_token(char, file)
