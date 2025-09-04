@@ -1,3 +1,6 @@
- se  contador > 10  { exemplo de comentário } 
+se  contador > 10  { exemplo de comentário } 
 entao  escreva (contador)  
 senao   escreva (x);
+
+{
+    boa tarde jovane
