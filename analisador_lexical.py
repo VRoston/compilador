@@ -29,13 +29,13 @@ KEYWORDS = {
 
 def main():
     try:
-        nome_arquivo_entrada = './test.txt'
+        nome_arquivo_entrada = './Testes Léxico/teste_7.txt'
         nome_arquivo_saida = "tabela_simbolos.txt"
 
         with open(nome_arquivo_entrada, 'r') as file, open(nome_arquivo_saida, 'w') as out:
             print("Arquivo de entrada aberto com sucesso!")
             
-            out.write("Tabela de Símbolos:\n")
+            out.write("Token:\n")
             out.write(f"{'Lexema':<20} | {'Simbolo':<20}\n")
             out.write("-" * 20 + "-+-" + "-" * 21 + "\n")
  
