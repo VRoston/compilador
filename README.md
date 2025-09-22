@@ -31,4 +31,4 @@ O resultado será salvo no arquivo `tabela_simbolos.txt`.
 
 ---
 
-Este projeto foi desenvolvido para fins de
+Este projeto foi desenvolvido para fins de estudos
