@@ -5,14 +5,13 @@ class AnalisadorSintatico:
     def __init__(self, arquivo_entrada):
         print(f"DEBUG: Inicializando AnalisadorSintatico com arquivo '{arquivo_entrada}'")
         with open(arquivo_entrada, 'r') as file:
-            self.tokens = lexical(file)
-        
-        self.pos = 0
+            self.file = file
+            self.token = lexical(self.file)
+    
         self.tabela = TabelaSimbolos()
-        self.erros = []
 
     def token_atual(self):
-        token = self.tokens[self.pos] if self.pos < len(self.tokens) else None
+        token = self.token[self.pos] if self.pos < len(self.token) else None
         print(f"DEBUG: Token atual na posição {self.pos}: {token}")
         return token
 
@@ -27,7 +26,7 @@ class AnalisadorSintatico:
             self.erros.append(erro)
 
     def analisar_programa(self):
-        # Skip initial tokens until 'sprograma'
+        # Skip initial token until 'sprograma'
         while self.token_atual() and self.token_atual().simbolo != "sprograma":
             print(f"DEBUG: Pulando token inicial: {self.token_atual().simbolo}")
             self.pos += 1
@@ -168,7 +167,7 @@ class AnalisadorSintatico:
         print("DEBUG: Iniciando análise de comando")
         if self.token_atual().simbolo == "sidentificador":
             # Verificar se é atribuição ou chamada de procedimento
-            prox_token = self.tokens[self.pos + 1] if self.pos + 1 < len(self.tokens) else None
+            prox_token = self.token[self.pos + 1] if self.pos + 1 < len(self.token) else None
             if prox_token and prox_token.simbolo == "satribuicao":
                 self.analisar_atribuicao()
             else:
