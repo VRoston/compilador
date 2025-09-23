@@ -1,4 +1,4 @@
-from analisador_lexical import get_token  # Ou importe tokens diretamente
+from analisador_lexical import get_token, Token  # Import Token class
 from tabela_simbolos import TabelaSimbolos
 
 class AnalisadorSintatico:
@@ -88,6 +88,8 @@ class AnalisadorSintatico:
                 self.analisar_declaracao_var()
             elif self.token_atual().simbolo == "sprocedimento":
                 self.analisar_declaracao_procedimento()
+            elif self.token_atual().simbolo == "sfuncao":
+                self.analisar_declaracao_funcao()  # Added for function support
             elif self.token_atual().simbolo == "sidentificador":
                 self.analisar_declaracao_var_without_var()
             else:
@@ -159,6 +161,31 @@ class AnalisadorSintatico:
         self.tabela.sair_escopo()
         self.consumir("sponto_virgula")
         print("DEBUG: Análise de declaração de procedimento concluída")
+
+    def analisar_declaracao_funcao(self):
+        print("DEBUG: Iniciando análise de declaração de função")
+        self.consumir("sfuncao")
+        nome = self.token_atual().lexema
+        self.consumir("sidentificador")
+        self.consumir("sabre_parenteses")
+        # Parse parameters (similar to var declarations)
+        while self.token_atual() and self.token_atual().simbolo != "sfecha_parenteses":
+            ids = self.analisar_lista_ids()
+            self.consumir("sdoispontos")
+            tipo = self.analisar_tipo()
+            for id in ids:
+                self.tabela.adicionar_simbolo(id, tipo)
+            if self.token_atual().simbolo == "sponto_virgula":
+                self.consumir("sponto_virgula")
+        self.consumir("sfecha_parenteses")
+        self.consumir("sdoispontos")
+        tipo_retorno = self.analisar_tipo()
+        self.consumir("sponto_virgula")
+        self.tabela.entrar_escopo()
+        self.analisar_bloco()
+        self.tabela.sair_escopo()
+        self.consumir("sponto_virgula")
+        print("DEBUG: Análise de declaração de função concluída")
 
     def analisar_comandos(self):
         print("DEBUG: Iniciando análise de comandos")
@@ -233,7 +260,10 @@ class AnalisadorSintatico:
         print("DEBUG: Iniciando análise de 'leia'")
         self.consumir("sleia")
         self.consumir("sabre_parenteses")
-        self.consumir("sidentificador")
+        self.analisar_expressao()  # Allow expression, not just identifier
+        while self.token_atual() and self.token_atual().simbolo == "svirgula":
+            self.consumir("svirgula")
+            self.analisar_expressao()
         self.consumir("sfecha_parenteses")
         print("DEBUG: Análise de 'leia' concluída")
 
@@ -242,6 +272,9 @@ class AnalisadorSintatico:
         self.consumir("sescreva")
         self.consumir("sabre_parenteses")
         self.analisar_expressao()
+        while self.token_atual() and self.token_atual().simbolo == "svirgula":
+            self.consumir("svirgula")
+            self.analisar_expressao()
         self.consumir("sfecha_parenteses")
         print("DEBUG: Análise de 'escreva' concluída")
 
@@ -261,6 +294,14 @@ class AnalisadorSintatico:
             self.consumir("sfecha_parenteses")
         elif self.token_atual().simbolo in ["sidentificador", "snumero"]:
             self.pos += 1  # Consume identifier or number
+            # Check for function call
+            if self.token_atual() and self.token_atual().simbolo == "sabre_parenteses":
+                self.consumir("sabre_parenteses")
+                while self.token_atual() and self.token_atual().simbolo != "sfecha_parenteses":
+                    self.analisar_expressao()
+                    if self.token_atual().simbolo == "svirgula":
+                        self.consumir("svirgula")
+                self.consumir("sfecha_parenteses")
         else:
             erro = "Erro: Termo esperado (identificador, número ou parênteses)"
             print(f"DEBUG: {erro}")
@@ -281,3 +322,4 @@ if __name__ == "__main__":
     print("DEBUG: Executando bloco principal")
     analisador = AnalisadorSintatico('./Testes Sintático/sint1.txt')
     analisador.analisar()
+    
