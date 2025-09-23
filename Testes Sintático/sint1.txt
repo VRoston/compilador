@@ -16,7 +16,7 @@ inicio
            a:= x+z
        fim;
   escreva(a)
-fim;
+fim;;
 
 
 procedimento analisa2;

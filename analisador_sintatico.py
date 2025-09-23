@@ -1,46 +1,14 @@
-from analisador_lexical import get_token, Token  # Import Token class
+from analisador_lexical import gerar_tokens, Token  # Import Token class
 from tabela_simbolos import TabelaSimbolos
 
 class AnalisadorSintatico:
     def __init__(self, arquivo_entrada):
         print(f"DEBUG: Inicializando AnalisadorSintatico com arquivo '{arquivo_entrada}'")
-        self.tokens = self.gerar_tokens(arquivo_entrada)
+        self.tokens = gerar_tokens(arquivo_entrada)
         print(f"DEBUG: Tokens gerados: {len(self.tokens)} tokens")
         self.pos = 0
         self.tabela = TabelaSimbolos()
         self.erros = []
-
-    def gerar_tokens(self, arquivo):
-        print(f"DEBUG: Gerando tokens para '{arquivo}'")
-        tokens = []
-        try:
-            with open(arquivo, 'r') as file:
-                while True:
-                    char = file.read(1)
-                    if not char:
-                        print("DEBUG: Fim do arquivo alcançado")
-                        break
-                    if char.isspace():
-                        continue
-                    if char == '{':
-                        comentario_fechado = False
-                        while True:
-                            char = file.read(1)
-                            if not char:
-                                break
-                            if char == '}':
-                                comentario_fechado = True
-                                break
-                        if not comentario_fechado:
-                            token = Token("{", "serro")
-                            tokens.append(token)
-                        continue
-                    token = get_token(char, file)
-                    print(f"DEBUG: Token gerado: lexema='{token.lexema}', simbolo='{token.simbolo}'")
-                    tokens.append(token)
-        except Exception as e:
-            print(f"DEBUG: Erro ao gerar tokens: {e}")
-        return tokens
 
     def token_atual(self):
         token = self.tokens[self.pos] if self.pos < len(self.tokens) else None

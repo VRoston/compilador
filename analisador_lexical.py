@@ -27,51 +27,37 @@ KEYWORDS = {
     "nao": "snao",
 }
 
-def main():
+def gerar_tokens(arquivo):
+    print(f"DEBUG: Gerando tokens para '{arquivo}'")
+    tokens = []
     try:
-        nome_arquivo_entrada = './Testes Léxico/teste_7.txt'
-        nome_arquivo_saida = "tabela_simbolos.txt"
-
-        with open(nome_arquivo_entrada, 'r') as file, open(nome_arquivo_saida, 'w') as out:
-            print("Arquivo de entrada aberto com sucesso!")
-            
-            out.write("Token:\n")
-            out.write(f"{'Lexema':<20} | {'Simbolo':<20}\n")
-            out.write("-" * 20 + "-+-" + "-" * 21 + "\n")
- 
+        with open(arquivo, 'r') as file:
             while True:
                 char = file.read(1)
- 
                 if not char:
+                    print("DEBUG: Fim do arquivo alcançado")
                     break
-
                 if char.isspace():
                     continue
-
                 if char == '{':
                     comentario_fechado = False
-                    while char:
+                    while True:
                         char = file.read(1)
+                        if not char:
+                            break
                         if char == '}':
                             comentario_fechado = True
                             break
                     if not comentario_fechado:
                         token = Token("{", "serro")
-                        out.write(f"{token.lexema:<20} | {token.simbolo:<20}\n")
+                        tokens.append(token)
                     continue
-
                 token = get_token(char, file)
-     
-                out.write(f"{token.lexema:<20} | {token.simbolo:<20}\n")
-
-            print(f"Análise concluída! Tabela de símbolos salva em '{nome_arquivo_saida}'.")
-
-    except FileNotFoundError:
-        print(f"Erro: O arquivo '{nome_arquivo_entrada}' não foi encontrado.")
+                print(f"DEBUG: Token gerado: lexema='{token.lexema}', simbolo='{token.simbolo}'")
+                tokens.append(token)
     except Exception as e:
-        print(f"Ocorreu um erro inesperado: {e}")
-
-    print("Fim do arquivo")
+        print(f"DEBUG: Erro ao gerar tokens: {e}")
+    return tokens
 
 def get_token(char, file):
     if char.isdigit():
@@ -189,6 +175,3 @@ def handle_digit(char, file):
                 file.seek(file.tell() - 1)
             break
     return Token(lexema, "snumero")
-
-if __name__ == "__main__":
-    main()
