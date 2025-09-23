@@ -1,11 +1,12 @@
-from analisador_lexical import gerar_tokens, Token  # Import Token class
+from analisador_lexical import lexical, Token  # Import Token class
 from tabela_simbolos import TabelaSimbolos
 
 class AnalisadorSintatico:
     def __init__(self, arquivo_entrada):
         print(f"DEBUG: Inicializando AnalisadorSintatico com arquivo '{arquivo_entrada}'")
-        self.tokens = gerar_tokens(arquivo_entrada)
-        print(f"DEBUG: Tokens gerados: {len(self.tokens)} tokens")
+        with open(arquivo_entrada, 'r') as file:
+            self.tokens = lexical(file)
+        
         self.pos = 0
         self.tabela = TabelaSimbolos()
         self.erros = []
@@ -26,7 +27,6 @@ class AnalisadorSintatico:
             self.erros.append(erro)
 
     def analisar_programa(self):
-        print("DEBUG: Iniciando análise do programa")
         # Skip initial tokens until 'sprograma'
         while self.token_atual() and self.token_atual().simbolo != "sprograma":
             print(f"DEBUG: Pulando token inicial: {self.token_atual().simbolo}")
@@ -277,7 +277,6 @@ class AnalisadorSintatico:
         print("DEBUG: Análise de termo concluída")
 
     def analisar(self):
-        print("DEBUG: Iniciando análise geral")
         self.analisar_programa()
         if self.erros:
             print("Erros sintáticos:", self.erros)

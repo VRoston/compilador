@@ -27,37 +27,32 @@ KEYWORDS = {
     "nao": "snao",
 }
 
-def gerar_tokens(arquivo):
-    print(f"DEBUG: Gerando tokens para '{arquivo}'")
+def lexical(file):
     tokens = []
     try:
-        with open(arquivo, 'r') as file:
-            while True:
-                char = file.read(1)
-                if not char:
-                    print("DEBUG: Fim do arquivo alcançado")
-                    break
-                if char.isspace():
-                    continue
-                if char == '{':
-                    comentario_fechado = False
-                    while True:
-                        char = file.read(1)
-                        if not char:
-                            break
-                        if char == '}':
-                            comentario_fechado = True
-                            break
-                    if not comentario_fechado:
-                        token = Token("{", "serro")
-                        tokens.append(token)
-                    continue
-                token = get_token(char, file)
-                print(f"DEBUG: Token gerado: lexema='{token.lexema}', simbolo='{token.simbolo}'")
-                tokens.append(token)
+        while True:
+            char = file.read(1)
+            if not char:
+                print("DEBUG: Fim do arquivo alcançado")
+                break
+            if char.isspace():
+                continue
+            if char == '{':
+                comentario_fechado = False
+                while True:
+                    char = file.read(1)
+                    if not char:
+                        break
+                    if char == '}':
+                        comentario_fechado = True
+                        break
+                if not comentario_fechado:
+                    return Token("{", "serro")
+                continue
+            return get_token(char, file)
     except Exception as e:
         print(f"DEBUG: Erro ao gerar tokens: {e}")
-    return tokens
+    return "ERRO"
 
 def get_token(char, file):
     if char.isdigit():
