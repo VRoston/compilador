@@ -3,42 +3,84 @@ from tabela_simbolos import TabelaSimbolos
 
 class AnalisadorSintatico:
     def __init__(self, arquivo_entrada):
-        print(f"DEBUG: Inicializando AnalisadorSintatico com arquivo '{arquivo_entrada}'")
-        with open(arquivo_entrada, 'r') as file:
-            self.file = file
-            self.token = lexical(self.file)
-    
-        self.tabela = TabelaSimbolos()
+        self.lexador = AnalisadorLexical(arquivo_entrada)
+        self.token_atual = None
+        self.erro = False
+        # self.tabela = TabelaSimbolos() # Descomente quando tiver o ficheiro da tabela
 
-    def token_atual(self):
-        token = self.token[self.pos] if self.pos < len(self.token) else None
-        print(f"DEBUG: Token atual na posição {self.pos}: {token}")
-        return token
+        self.keywords = {
+            "sprograma": "programa",
+            "sinicio": "inicio",
+            "sfim": "fim",
+            "sprocedimento": "procedimento",
+            "sfuncao": "funcao",
+            "sse": "se",
+            "sentao": "entao",
+            "ssenao": "senao",
+            "senquanto": "enquanto",
+            "sfaca": "faca",
+            "satribuicao": ":=",
+            "sescreva": "escreva",
+            "sleia": "leia",
+            "svar": "var",
+            "sinteiro": "inteiro",
+            "sbooleano": "booleano",
+            "sidentificador": "identificador",
+            "snumero": "numero",
+            "sponto": ".",
+            "sponto_virgula": ";",
+            "svirgula": ",",
+            "sabre_parenteses": "(",
+            "sfecha_parenteses": ")",
+            "smaior": ">",
+            "smaiorigual": ">=",
+            "sigual": "=",
+            "smenor": "<",
+            "smenorigual": "<=",
+            "sdif": "!=",
+            "smais": "+",
+            "smenos": "-",
+            "smult": "*",
+            "sdiv": "div",
+            "se": "e",
+            "sou": "ou",
+            "snao": "nao",
+            "sdoispontos": ":",
+            "sverdadeiro": "verdadeiro",
+            "sfalso": "falso",
+            "serro": "erro",
+        }
 
-    def consumir(self, simbolo_esperado):
-        token = self.token_atual()
-        if token and token.simbolo == simbolo_esperado:
-            print(f"DEBUG: Consumindo token: '{simbolo_esperado}'")
-            self.pos += 1
+    def _consumir(self, simbolo_esperado):
+        """Verifica o token atual e avança para o próximo."""
+
+
+        if self.token_atual and self.token_atual.simbolo == simbolo_esperado:
+            self.token_atual = self.lexador.proximo_token()
         else:
-            erro = f"Erro: Esperado '{simbolo_esperado}', encontrado '{token.simbolo if token else 'EOF'}'"
-            print(f"DEBUG: {erro}")
-            self.erros.append(erro)
+            simbolo_encontrado = self.token_atual.lexema if self.token_atual else 'Fim de arquivo'
+            print(f"Erro sintático: Esperado '{simbolo_esperado}', mas encontrado '{simbolo_encontrado}'")
+            self.erro = True
 
-    def analisar_programa(self):
-        # Skip initial token until 'sprograma'
-        while self.token_atual() and self.token_atual().simbolo != "sprograma":
-            print(f"DEBUG: Pulando token inicial: {self.token_atual().simbolo}")
-            self.pos += 1
-        self.consumir("sprograma")
-        self.consumir("sidentificador")
-        self.consumir("sponto_virgula")
-        # Skip extra semicolons
-        while self.token_atual() and self.token_atual().simbolo == "sponto_virgula":
-            self.consumir("sponto_virgula")
-        self.analisar_bloco()
-        self.consumir("sponto")
-        print("DEBUG: Análise do programa concluída")
+    def analisar(self):
+        self.token_atual, erro = self.lexador.proximo_token()
+        if self.token.simbolo == "serro":
+            print(f"Erro lexical: {erro}")
+            return
+
+        self._analisar_programa()
+        self.lexador.fechar()
+
+    def _analisar_programa(self):
+        self._consumir("sprograma")
+        if not self.erro:
+            self._consumir("sidentificador")
+            if not self.erro:
+                self._consumir("sponto_virgula")
+                if not self.erro:
+                    self.analisar_bloco()
+                    if not self.erro:
+                        self._consumir("sponto")
 
     def analisar_bloco(self):
         print("DEBUG: Iniciando análise do bloco")
@@ -275,13 +317,13 @@ class AnalisadorSintatico:
             self.erros.append(erro)
         print("DEBUG: Análise de termo concluída")
 
-    def analisar(self):
-        self.analisar_programa()
-        if self.erros:
-            print("Erros sintáticos:", self.erros)
-        else:
-            print("Análise sintática bem-sucedida.")
-        print("DEBUG: Análise geral concluída")
+    # def analisar(self):
+    #     self.analisar_programa()
+    #     if self.erros:
+    #         print("Erros sintáticos:", self.erros)
+    #     else:
+    #         print("Análise sintática bem-sucedida.")
+    #     print("DEBUG: Análise geral concluída")
 
 if __name__ == "__main__":
     # Exemplo: analisar sint2.txt
