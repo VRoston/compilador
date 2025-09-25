@@ -19,27 +19,12 @@ class AnalisadorLexical:
             raise Exception(f"Error: File '{nome_arquivo}' not found.")
         
         self.keywords = {
-            "programa": "sprograma", 
-            "se": "sse", 
-            "entao": "sentao", 
-            "senao": "ssenao",
-            "enquanto": "senquanto", 
-            "faca": "sfaca",
-            "inicio": "sinicio",
-            "fim": "sfim",
-            "escreva": "sescreva", 
-            "leia": "sleia", 
-            "var": "svar", 
-            "inteiro": "sinteiro",
-            "booleano": "sbooleano", 
-            "verdadeiro": "sverdadeiro", 
-            "falso": "sfalso",
-            "procedimento": "sprocedimento", 
-            "funcao": "sfuncao", 
-            "div": "sdiv",
-            "e": "se", 
-            "ou": "sou", 
-            "nao": "snao",
+            "programa": "sprograma", "se": "sse", "entao": "sentao", "senao": "ssenao",
+            "enquanto": "senquanto", "faca": "sfaca", "inicio": "sinicio", "fim": "sfim",
+            "escreva": "sescreva", "leia": "sleia", "var": "svar", "inteiro": "sinteiro",
+            "booleano": "sbooleano", "verdadeiro": "sverdadeiro", "falso": "sfalso",
+            "procedimento": "sprocedimento", "funcao": "sfuncao", "div": "sdiv",
+            "e": "se", "ou": "sou", "nao": "snao",
         }
 
     def proximo_token(self):
@@ -54,15 +39,17 @@ class AnalisadorLexical:
                 continue
 
             if char == '{':
-                while char != '}' and char:
+                comentario_fechado = False # CORRIGIDO: Inicializa a variável
+                while True:
                     char = self.file.read(1)
-                    if not char:
+                    if not char: # Fim do ficheiro
                         break
                     if char == '}':
                         comentario_fechado = True
                         break
+                
                 if not comentario_fechado:
-                    print("Erro lexical, comentário não fechado.")
+                    print("Erro lexical: Comentário não fechado.")
                     return Token("{", "serro")
                 continue
 
@@ -83,82 +70,43 @@ class AnalisadorLexical:
         elif char in ['+', '-', '*']:
             return self._handle_arithmetic_operator(char)
         elif char in ['<', '>', '=', '!']:
+            # CORRIGIDO: A chamada agora está correta
             return self._handle_relational_operator(char)
         elif char in ['.', ';', ',', '(', ')']:
             return self._handle_punctuation(char)
         else:
-            print(f"Erro lexical, símbolo inválido: '{char}'")
+            print(f"Erro lexical: Símbolo inválido '{char}'")
             return Token(char, "serro")
     
     def _handle_arithmetic_operator(self, char):
-        lexema = char
-        simbolo_map = {
-            '+': 'smais',
-            '-': 'smenos',
-            '*': 'smult'
-        }
-        simbolo = simbolo_map.get(char, 'serro')
-        if simbolo == 'serro':
-            print(f"Erro lexical, símbolo inválido: '{char}'")
-        return Token(lexema, simbolo)
+        return Token(char, {'+': 'smais', '-': 'smenos', '*': 'smult'}.get(char))
     
     def _handle_punctuation(self, char):
-        lexema = char
-        simbolo_map = {
-            '.': 'sponto',
-            ';': 'sponto_virgula',
-            ',': 'svirgula',
-            '(': 'sabre_parenteses',
-            ')': 'sfecha_parenteses'
-        }
-        simbolo = simbolo_map.get(char, 'serro')
-        if simbolo == 'serro':
-            print(f"Erro lexical, símbolo inválido: '{char}'")
-        return Token(lexema, simbolo)
+        return Token(char, {'.': 'sponto', ';': 'sponto_virgula', ',': 'svirgula', '(': 'sabre_parenteses', ')': 'sfecha_parenteses'}.get(char))
 
-    def _handle_relational_operator(char, file):
+    # CORRIGIDO: Assinatura e corpo do método
+    def _handle_relational_operator(self, char):
         lexema = char
-        prox_char = file.read(1)
+        prox_char = self.file.read(1)
+
+        def ungetc():
+            if prox_char: self.file.seek(self.file.tell() - 1)
+
         if char == '<':
-            if prox_char == '=':
-                lexema += prox_char
-                return Token(lexema, "smenorigual")
-            elif prox_char == '>':
-                lexema += prox_char
-                return Token(lexema, "sdif")
-            else:
-                if prox_char:
-                    file.seek(file.tell() - 1)
-                return Token(lexema, "smenor")
+            if prox_char == '=': return Token("<=", "smenorigual")
+            if prox_char == '>': return Token("<>", "sdif")
+            ungetc(); return Token("<", "smenor")
         elif char == '>':
-            if prox_char == '=':
-                lexema += prox_char
-                return Token(lexema, "smaiorigual")
-            else:
-                if prox_char:
-                    file.seek(file.tell() - 1)
-                return Token(lexema, "smaior")
+            if prox_char == '=': return Token(">=", "smaiorigual")
+            ungetc(); return Token(">", "smaior")
         elif char == '=':
-            if prox_char == '=':
-                lexema += prox_char
-                return Token(lexema, "sigual")
-            else:
-                if prox_char:
-                    file.seek(file.tell() - 1)
-                print(f"Erro lexical, símbolo inválido: '{char}'")
-                return Token(lexema, "serro")
+            # CORRIGIDO: Um único '=' é o operador de igualdade
+            ungetc(); return Token("=", "sigual")
         elif char == '!':
-            if prox_char == '=':
-                lexema += prox_char
-                return Token(lexema, "sdif")
-            else:
-                if prox_char:
-                    file.seek(file.tell() - 1)
-                print(f"Erro lexical, símbolo inválido: '{char}'")
-                return Token(lexema, "serro")
-        else:
-            print(f"Erro lexical, símbolo inválido: '{char}'")
-            return Token(lexema, "serro")
+            if prox_char == '=': return Token("!=", "sdif")
+            ungetc()
+            print(f"Erro lexical: Símbolo '!' inválido. Talvez quisesse dizer '!='?")
+            return Token("!", "serro")
 
     def _handle_assignment(self, char):
         prox_char = self.file.read(1)
