@@ -1,4 +1,4 @@
-from analisador_lexical import lexical, Token  # Import Token class
+from analisador_lexical import AnalisadorLexical, Token
 from tabela_simbolos import TabelaSimbolos
 
 class AnalisadorSintatico:
@@ -6,7 +6,7 @@ class AnalisadorSintatico:
         self.lexador = AnalisadorLexical(arquivo_entrada)
         self.token_atual = None
         self.erro = False
-        self.tabela = TabelaSimbolos() # Descomente quando tiver o ficheiro da tabela
+        self.tabela = TabelaSimbolos()
 
         self.keywords = {
             "sprograma": "programa",
@@ -65,19 +65,22 @@ class AnalisadorSintatico:
         self.token_atual = self.lexador.proximo_token()
         self._analisar_programa()
         self.lexador.fechar()
+        print("DEBUG: Fim da analise")
 
     def _analisar_programa(self):
         """Analisa a estrutura principal do programa."""     
         self._consumir("sprograma")
-        if not self.erro:
+        if not self.erro and self.token_atual.simbolo == "sidentificador":
+            self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='programa')
             self._consumir("sidentificador")
             if not self.erro:
-                self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='programa')
                 self._consumir("sponto_virgula")
                 if not self.erro:
                     self.analisar_bloco()
                     if not self.erro:
-                        self._consumir("sponto")
+                        self._consumir("sfim")
+                        if not self.erro:
+                            self._consumir("sponto")
         
     def analisar_bloco(self):
         """Analisa o bloco de declarações e comandos."""
@@ -88,11 +91,10 @@ class AnalisadorSintatico:
     def _analisa_et_variaveis(self):
         """Analisa todas as seções de declaração de variáveis."""
         if self.token_atual and self.token_atual.simbolo == "svar":
-            self.consumir("svar")
+            self._consumir("svar")
 
             while self.token_atual and self.token_atual.simbolo == "sidentificador":
                 self._analisa_variaveis()
-
 
     def _analisa_variaveis(self):
         """Analisa uma linha de declaração como 'a, b, c : inteiro;'"""
@@ -101,19 +103,21 @@ class AnalisadorSintatico:
         # 1. Coletar todos os identificadores (ex: 'a', 'b', 'c')
         while self.token_atual and self.token_atual.simbolo == "sidentificador":
             variaveis_para_declarar.append(self.token_atual.lexema)
-            self.consumir("sidentificador")
+            self._consumir("sidentificador")
             if self.token_atual.simbolo == "svirgula":
-                self.consumir("svirgula")
+                self._consumir("svirgula")
             else:
                 break
         
         # 2. Consumir os dois-pontos e o tipo
-        self.consumir("sdoispontos")
+        self._consumir("sdoispontos")
+        if self.erro:
+            return
         
         tipo_das_variaveis = None
         if self.token_atual and self.token_atual.simbolo in ["sinteiro", "sbooleano"]:
             tipo_das_variaveis = self.token_atual.lexema # Guarda o tipo (ex: 'inteiro')
-            self.consumir(self.token_atual.simbolo)
+            self._consumir(self.token_atual.simbolo)
         else:
             print("Erro sintático: Tipo esperado (inteiro ou booleano)")
             self.erro = True
@@ -124,22 +128,53 @@ class AnalisadorSintatico:
             for nome_var in variaveis_para_declarar:
                 try:
                     self.tabela.adicionar_simbolo(nome_var, tipo=tipo_das_variaveis)
-                    print(f"DEBUG: Inserida variável '{nome_var}' do tipo '{tipo_das_variaveis}' na tabela.")
                 except ValueError as e:
                     print(f"Erro Semântico: {e}")
                     self.erro = True
 
-        self.consumir("sponto_virgula")
+        self._consumir("sponto_virgula")
     
     def _analisa_subrotinas(self):
+        """Placeholder para análise de procedimentos e funções."""
+        # Aqui virá a lógica para analisar sprocedimento e sfuncao
         pass
 
     def _analisa_comandos(self):
+        """Placeholder para análise de comandos."""
+        if self.token_atual and self.token_atual.simbolo == "sinicio":
+            self._consumir("sinicio")
+            while self.token_atual and self.token_atual.simbolo != "sfim":
+                self._analisa_comando_simples()
+
+    def _analisa_comando_simples(self):
+        """Analisa um comando simples dentro do bloco de comandos."""
+        if self.token_atual.simbolo == "sidentificador":
+            self._analisa_atrib_chprocedimento()
+        elif self.token_atual.simbolo == "sse":
+            self._analisa_se()
+        elif self.token_atual.simbolo == "senquanto":
+            self._analisa_enquanto()
+        elif self.token_atual.simbolo == "sescreva":
+            self._analisa_escreva()
+        elif self.token_atual.simbolo == "sleia":
+            self._analisa_leia()
+        else:
+            self._analisa_comandos()
+
+    def _analisa_atrib_chprocedimento(self):
+        pass
+    def _analisa_se(self):
+        pass
+    def _analisa_enquanto(self):
+        pass
+    def _analisa_escreva(self):
+        pass
+    def _analisa_leia(self):
         pass
 
 if __name__ == "__main__":
     # Exemplo: analisar sint2.txt
     print("DEBUG: Executando bloco principal")
-    analisador = AnalisadorSintatico('./Testes Sintático/sint1.txt')
+    analisador = AnalisadorSintatico('./Testes Sintático/teste.jovane')
     analisador.analisar()
     
