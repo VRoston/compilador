@@ -162,14 +162,37 @@ class AnalisadorSintatico:
             self._analisa_comandos()
 
     def _analisa_atrib_chprocedimento(self):
-        pass
+        self._consumir("sidentificador")
+        if self.token_atual.simbolo == "satribuicao":
+            self._consumir("satribuicao")
+            self._analisa_atribuicao()
+        else:
+            self._chamada_procedimento()
+
+    def _analisa_leia(self):
+        self._consumir("sleia")
+        self._consumir("sabre_parenteses")
+        if not self.erro:
+            self._consumir("sidentificador")
+            if not self.erro:
+                
+                self._consumir("sfecha_parenteses")
+                if not self.erro:
+                    self._consumir("sponto_virgula")
+
     def _analisa_se(self):
         pass
+
     def _analisa_enquanto(self):
         pass
+
     def _analisa_escreva(self):
         pass
-    def _analisa_leia(self):
+
+    def _analisa_atribuicao(self):
+        pass
+
+    def _chamada_procedimento(self):
         pass
 
 if __name__ == "__main__":
