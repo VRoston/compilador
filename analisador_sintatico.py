@@ -67,7 +67,8 @@ class AnalisadorSintatico:
         self.lexador.fechar()
         print("DEBUG: Fim da analise")
 
-    def _analisar_programa(self):
+    # AQUI DEVE TER CÓDIGO DE GERAÇÃO DE RÓTULO
+    def _analisar_programa(self): 
         """Analisa a estrutura principal do programa."""     
         self._consumir("sprograma")
         if not self.erro and self.token_atual.simbolo == "sidentificador":
@@ -134,13 +135,7 @@ class AnalisadorSintatico:
 
         self._consumir("sponto_virgula")
     
-    def _analisa_subrotinas(self):
-        """Placeholder para análise de procedimentos e funções."""
-        # Aqui virá a lógica para analisar sprocedimento e sfuncao
-        pass
-
     def _analisa_comandos(self):
-        """Placeholder para análise de comandos."""
         if self.token_atual and self.token_atual.simbolo == "sinicio":
             self._consumir("sinicio")
             while self.token_atual and self.token_atual.simbolo != "sfim":
@@ -158,8 +153,11 @@ class AnalisadorSintatico:
             self._analisa_escreva()
         elif self.token_atual.simbolo == "sleia":
             self._analisa_leia()
+        elif self.token_atual.simbolo == "sinicio":
+            self.analisar_bloco()
         else:
-            self._analisa_comandos()
+            print(f"Erro Sintático: Comando inválido ou inesperado '{self.token_atual.lexema}'.")
+            self.erro = True
 
     def _analisa_atrib_chprocedimento(self):
         self._consumir("sidentificador")
@@ -175,24 +173,88 @@ class AnalisadorSintatico:
         if not self.erro:
             self._consumir("sidentificador")
             if not self.erro:
-                
+                try:
+                    self.tabela.buscar_simbolo(self.token_atual.lexema)
+                except ValueError as e:
+                    print(f"Erro Semântico: {e}")
+                    self.erro = True
                 self._consumir("sfecha_parenteses")
                 if not self.erro:
                     self._consumir("sponto_virgula")
 
-    def _analisa_se(self):
-        pass
-
-    def _analisa_enquanto(self):
-        pass
-
     def _analisa_escreva(self):
+        self._consumir("sescreva")
+        self._consumir("sabre_parenteses")
+        if not self.erro:
+            self._consumir("sidentificador")
+            if not self.erro:
+                try:
+                    self.tabela.buscar_simbolo(self.token_atual.lexema)
+                except ValueError as e:
+                    print(f"Erro Semântico: {e}")
+                    self.erro = True
+                self._consumir("sfecha_parenteses")
+                if not self.erro:
+                    self._consumir("sponto_virgula")
+    
+    # AQUI DEVE TER CÓDIGO DE GERAÇÃO DE RÓTULO
+    def _analisa_enquanto(self): 
+        self._consumir("senquanto")
+        self._consumir("sabre_parenteses")
+        if not self.erro:
+            self._analisa_expressao()
+            if not self.erro:
+                self._consumir("sfecha_parenteses")
+                if not self.erro:
+                    self._consumir("sfaca")
+                    if not self.erro:
+                        self._analisa_comando_simples()      
+
+    def _analisa_se(self):
+        self._consumir("sse")
+        self._consumir("sabre_parenteses")
+        if not self.erro:
+            self._analisa_expressao()
+            if not self.erro:
+                self._consumir("sfecha_parenteses")
+                if not self.erro:
+                    self._consumir("sentao")
+                    if not self.erro:
+                        self._analisa_comando_simples()
+                        if not self.erro and self.token_atual and self.token_atual.simbolo == "ssenao":
+                            self._consumir("ssenao")
+                            if not self.erro:
+                                self._analisa_comando_simples()
+
+    def _analisa_subrotinas(self):
+        while self.token_atual and self.token_atual.simbolo in ["sprocedimento", "sfuncao"]:
+            if self.token_atual.simbolo == "sprocedimento":
+                self._consumir("sprocedimento")
+                self._analisa_declaracao_procedimento()
+            elif self.token_atual.simbolo == "sfuncao":
+                self._consumir("sfuncao")
+                self._analisa_declaracao_funcao()
+            self._consumir("sponto_virgula")
+
+    def _analisa_declaracao_procedimento(self):
+        pass
+
+    def _analisa_declaracao_funcao(self):
         pass
 
     def _analisa_atribuicao(self):
         pass
 
     def _chamada_procedimento(self):
+        pass
+    
+    def _analisa_expressao(self):
+        pass
+
+    def _analisa_expressao_simples(self):
+        pass
+
+    def _analisa_termo(self):
         pass
 
 if __name__ == "__main__":

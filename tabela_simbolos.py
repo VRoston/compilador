@@ -6,7 +6,7 @@ class TabelaSimbolos:
 
     def adicionar_simbolo(self, nome, tipo=None):
         if nome in self.escopos[-1]:
-            raise ValueError(f"Símbolo '{nome}' já declarado no escopo atual.")
+            raise ValueError(f"símbolo '{nome}' já declarado no escopo atual.")
         memoria = self.endereco_memoria
         self.endereco_memoria += 4  # Assume 4 bytes per variable
         self.escopos[-1][nome] = {
@@ -20,9 +20,8 @@ class TabelaSimbolos:
         for escopo in reversed(self.escopos):
             if nome in escopo:
                 return escopo[nome]
-        return None
-
-    def colocar_tipo_variaveis(self, tipo):
+        raise ValueError(f"símbolo '{nome}' não declarado dentro do escopo.")
+s
         # Traverse from end to start, set type for variables without type
         for escopo in reversed(self.escopos):
             for simbolo in reversed(list(escopo.values())):
