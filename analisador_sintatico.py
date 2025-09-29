@@ -1,3 +1,5 @@
+import sys
+import os
 from analisador_lexical import AnalisadorLexical, Token
 from tabela_simbolos import TabelaSimbolos
 
@@ -237,10 +239,50 @@ class AnalisadorSintatico:
             self._consumir("sponto_virgula")
 
     def _analisa_declaracao_procedimento(self):
-        pass
+        if self.token_atual.simbolo == "sidentificador":
+            try:
+                self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='procedimento')
+            except ValueError as e:
+                print(f"Erro Semântico: {e}")
+                self.erro = True
+            if not self.erro:
+                self._consumir("sidentificador")
+                if not self.erro:
+                    self._consumir("sponto_virgula")
+                    if not self.erro:
+                        self.tabela.entrar_escopo()
+                        self.analisar_bloco()
+                        self.tabela.sair_escopo()
+                        if not self.erro:
+                            self._consumir("sfim")
+                            if not self.erro:
+                                self._consumir("sponto_virgula")
 
     def _analisa_declaracao_funcao(self):
-        pass
+        nome_funcao = self.token_atual.lexema
+        tipo_retorno = None
+        self._consumir("sidentificador")
+        if not self.erro:
+            self._consumir("sdoispontos")
+            if not self.erro:
+                if self.token_atual.simbolo in ["sinteiro", "sbooleano"]:
+                    tipo_retorno = self.token_atual.lexema
+                    self._consumir(self.token_atual.simbolo)
+                    if not self.erro:
+                        try:
+                            self.tabela.adicionar_simbolo(nome_funcao, tipo=f'funcao {tipo_retorno}')
+                        except ValueError as e:
+                            print(f"Erro Semântico: {e}")
+                            self.erro = True
+                        if not self.erro:
+                            self._consumir("sponto_virgula")
+                            if not self.erro:
+                                self.tabela.entrar_escopo()
+                                self.analisar_bloco()
+                                self.tabela.sair_escopo()
+                else:
+                    print("Erro sintático: Tipo de retorno esperado (inteiro ou booleano)")
+                    self.erro = True
 
     def _analisa_atribuicao(self):
         pass
@@ -249,17 +291,75 @@ class AnalisadorSintatico:
         pass
     
     def _analisa_expressao(self):
-        pass
+        self._analisa_expressao_simples()
+        while self.token_atual and self.token_atual.simbolo in ["smaior", "smaiorigual", "smenor", "smenorigual", "sigual", "sdif"]:
+            self._consumir(self.token_atual.simbolo)
+            if not self.erro:
+                self._analisa_expressao_simples()
 
     def _analisa_expressao_simples(self):
-        pass
+        if self.token_atual and self.token_atual.simbolo in ["smais", "smenos"]:
+            self._consumir(self.token_atual.simbolo)
+        
+        self._analisa_termo()
+        
+        while self.token_atual and self.token_atual.simbolo in ["smais", "smenos", "sou", "se"]:
+            self._consumir(self.token_atual.simbolo)
+            if not self.erro:
+                self._analisa_termo()
 
     def _analisa_termo(self):
-        pass
+        self._analisa_fator()
+        while self.token_atual and self.token_atual.simbolo in ["smult", "sdiv", "se", "sou"]:
+            self._consumir(self.token_atual.simbolo)
+            if not self.erro:
+                self._analisa_fator()
+
+    def _analisa_fator(self):
+        if self.token_atual.simbolo == "sidentificador":
+            self._consumir("sidentificador")
+            try:
+                simbolo = self.tabela.buscar_simbolo(self.token_atual.lexema)
+            except ValueError as e:
+                print(f"Erro Semântico: {e}")
+                self.erro = True
+            if not self.erro and simbolo['tipo'] in ['funcao inteiro', 'funcao booleano']:
+                self._analisa_chamada_funcao()
+        elif self.token_atual.simbolo == "snumero":
+            self._consumir("snumero")
+        elif self.token_atual.simbolo in ["sverdadeiro", "sfalso"]:
+            self._consumir(self.token_atual.simbolo)
+        elif self.token_atual.simbolo == "sabre_parenteses":
+            self._consumir("sabre_parenteses")
+            if not self.erro:
+                self._analisa_expressao()
+                if not self.erro:
+                    self._consumir("sfecha_parenteses")
+        elif self.token_atual.simbolo == "snao":
+            self._consumir("snao")
+            if not self.erro:
+                self._analisa_fator()
+        else:
+            print(f"Erro Sintático: Fator inválido ou inesperado '{self.token_atual.lexema}'.")
+            self.erro = True
 
 if __name__ == "__main__":
-    # Exemplo: analisar sint2.txt
-    print("DEBUG: Executando bloco principal")
-    analisador = AnalisadorSintatico('./Testes Sintático/teste.jovane')
-    analisador.analisar()
+    if len(sys.argv) != 2:
+        print("Erro: Modo de uso incorreto.")
+        print("Uso: python analisador_sintatico.py <caminho_para_o_arquivo.jovane>")
+        sys.exit(1) 
+
+    caminho_arquivo = sys.argv[1]
     
+    nome_base, extensao = os.path.splitext(caminho_arquivo)
+
+    if extensao != '.jovane':
+        print(f"Erro: O ficheiro '{caminho_arquivo}' não é válido.")
+        print("Por favor, forneça um arquivo .jovane")
+        sys.exit(1)
+    
+    try:
+        analisador = AnalisadorSintatico(caminho_arquivo)
+        analisador.analisar()
+    except Exception as e:
+        print(f"Ocorreu um erro fatal durante a análise: {e}")

@@ -21,7 +21,6 @@ class TabelaSimbolos:
             if nome in escopo:
                 return escopo[nome]
         raise ValueError(f"símbolo '{nome}' não declarado dentro do escopo.")
-s
         # Traverse from end to start, set type for variables without type
         for escopo in reversed(self.escopos):
             for simbolo in reversed(list(escopo.values())):
