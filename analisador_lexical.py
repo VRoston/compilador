@@ -9,9 +9,7 @@ class Token:
         return f"Token(lexema='{self.lexema}', simbolo='{self.simbolo}')"
 
 class AnalisadorLexical:
-    """
-    Lê um ficheiro de código e retorna um token de cada vez, sob demanda.
-    """
+    """Lê um ficheiro de código e retorna um token de cada vez, sob demanda."""
     def __init__(self, nome_arquivo):
         try:
             self.file = open(nome_arquivo, 'r')

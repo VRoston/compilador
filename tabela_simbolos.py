@@ -28,7 +28,7 @@ class TabelaSimbolos:
                     simbolo['tipo'] = tipo
                 else:
                     break  # Stop at first typed symbol
-
+                    
     def entrar_escopo(self):
         self.escopos.append({})
         self.nivel_atual += 1

@@ -88,26 +88,27 @@ class AnalisadorSintatico:
     def analisar_bloco(self):
         """Analisa o bloco de declarações e comandos."""
         self._analisa_et_variaveis()
-        self._analisa_subrotinas()
-        self._analisa_comandos()
+        if not self.erro:
+            self._analisa_subrotinas()
+            if not self.erro:
+                self._analisa_comandos()
 
     def _analisa_et_variaveis(self):
         """Analisa todas as seções de declaração de variáveis."""
         if self.token_atual and self.token_atual.simbolo == "svar":
             self._consumir("svar")
-
-            while self.token_atual and self.token_atual.simbolo == "sidentificador":
-                self._analisa_variaveis()
+            if not self.erro:
+                while self.token_atual and self.token_atual.simbolo == "sidentificador":
+                    self._analisa_variaveis()
 
     def _analisa_variaveis(self):
         """Analisa uma linha de declaração como 'a, b, c : inteiro;'"""
         variaveis_para_declarar = []
         
-        # 1. Coletar todos os identificadores (ex: 'a', 'b', 'c')
         while self.token_atual and self.token_atual.simbolo == "sidentificador":
             variaveis_para_declarar.append(self.token_atual.lexema)
             self._consumir("sidentificador")
-            if self.token_atual.simbolo == "svirgula":
+            if self.token_atual.simbolo == "svirgula" and not self.erro:
                 self._consumir("svirgula")
             else:
                 break
@@ -162,12 +163,14 @@ class AnalisadorSintatico:
             self.erro = True
 
     def _analisa_atrib_chprocedimento(self):
+        simbolo = self.token_atual.lexema
         self._consumir("sidentificador")
-        if self.token_atual.simbolo == "satribuicao":
-            self._consumir("satribuicao")
-            self._analisa_atribuicao()
-        else:
-            self._chamada_procedimento()
+        if not self.erro:
+            if self.token_atual.simbolo == "satribuicao":
+                self._consumir("satribuicao")
+                self._analisa_atribuicao(simbolo)
+            else:
+                self._analisa_chamada_procedimento(simbolo)
 
     def _analisa_leia(self):
         self._consumir("sleia")
@@ -283,12 +286,6 @@ class AnalisadorSintatico:
                 else:
                     print("Erro sintático: Tipo de retorno esperado (inteiro ou booleano)")
                     self.erro = True
-
-    def _analisa_atribuicao(self):
-        pass
-
-    def _chamada_procedimento(self):
-        pass
     
     def _analisa_expressao(self):
         self._analisa_expressao_simples()
@@ -343,6 +340,31 @@ class AnalisadorSintatico:
             print(f"Erro Sintático: Fator inválido ou inesperado '{self.token_atual.lexema}'.")
             self.erro = True
 
+    def _analisa_atribuicao(self, simbolo):
+        try:
+            _ = self.tabela.buscar_simbolo(simbolo)
+        except ValueError as e:
+            print(f"Erro Semântico: {e}")
+            self.erro = True
+        if not self.erro:
+            self._analisa_expressao()
+            if not self.erro:
+                self._consumir("sponto_virgula")
+
+    def _analisa_chamada_procedimento(self, simbolo):
+        try:
+            _ = self.tabela.buscar_simbolo(simbolo)
+        except ValueError as e:
+            print(f"Erro Semântico: {e}")
+            self.erro = True
+        if not self.erro:
+            self._consumir("sponto_virgula")
+
+    def _analisa_chamada_funcao(self):
+        self._consumir("sabre_parenteses")
+        if not self.erro:
+            self._consumir("sfecha_parenteses")
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Erro: Modo de uso incorreto.")
@@ -354,7 +376,7 @@ if __name__ == "__main__":
     nome_base, extensao = os.path.splitext(caminho_arquivo)
 
     if extensao != '.jovane':
-        print(f"Erro: O ficheiro '{caminho_arquivo}' não é válido.")
+        print(f"Erro: O arquivo '{caminho_arquivo}' não é válido.")
         print("Por favor, forneça um arquivo .jovane")
         sys.exit(1)
     
