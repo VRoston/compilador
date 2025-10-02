@@ -55,7 +55,6 @@ class AnalisadorSintatico:
 
     def _consumir(self, simbolo_esperado):
         """Verifica o token atual e avança para o próximo."""
-        print(f"SINTATICO {self.token_atual}")
         if self.token_atual and self.token_atual.simbolo == simbolo_esperado:
             self.token_atual = self.lexador.proximo_token()
         else:
@@ -63,12 +62,12 @@ class AnalisadorSintatico:
             if self.token_atual.simbolo != "serro":
                 print(f"Erro sintático: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado '{simbolo_encontrado}'")
             self.erro = True
+        print(f"SINTATICO {self.token_atual.lexema}")
     
     def analisar(self):
         self.token_atual = self.lexador.proximo_token()
         self._analisar_programa()
         self.lexador.fechar()
-        print("DEBUG: Fim da analise")
 
     # AQUI DEVE TER CÓDIGO DE GERAÇÃO DE RÓTULO
     def _analisar_programa(self): 
@@ -80,18 +79,16 @@ class AnalisadorSintatico:
             if not self.erro:
                 self._consumir("sponto_virgula")
                 if not self.erro:
-                    self.analisar_bloco()
-                    if not self.erro:
-                        self._consumir("sfim")
-                        if not self.erro:
-                            self._consumir("sponto")
+                    self.analisar_bloco(final=True)
         
-    def analisar_bloco(self):
+    def analisar_bloco(self, final=False):
         """Analisa o bloco de declarações e comandos."""
         self._analisa_et_variaveis()
         if not self.erro:
             self._analisa_subrotinas()
-            if not self.erro:
+            if not self.erro and final:
+                self._analisa_comando_final()
+            elif not self.erro:
                 self._analisa_comandos()
 
     def _analisa_et_variaveis(self):
@@ -122,9 +119,7 @@ class AnalisadorSintatico:
         tipo_das_variaveis = None
         if self.token_atual and self.token_atual.simbolo in ["sinteiro", "sbooleano"]:
             tipo_das_variaveis = self.token_atual.lexema # Guarda o tipo (ex: 'inteiro')
-            print(f'SINTATICO {self.token_atual.simbolo}')
             self._consumir(self.token_atual.simbolo)
-            print(f'SINTATICO {self.token_atual.simbolo}')
         else:
             print("Erro sintático: Tipo esperado (inteiro ou booleano)")
             self.erro = True
@@ -140,12 +135,26 @@ class AnalisadorSintatico:
                     self.erro = True
 
         self._consumir("sponto_virgula")
-    
+
+    def _analisa_comando_final(self):
+        if self.token_atual and self.token_atual.simbolo == "sinicio":
+            self._consumir("sinicio")
+            while self.token_atual and self.token_atual.simbolo != "sfim" and not self.erro:
+                self._analisa_comando_simples()
+            if not self.erro:
+                self._consumir("sfim")
+                if not self.erro:
+                    self._consumir("sponto")
+
     def _analisa_comandos(self):
         if self.token_atual and self.token_atual.simbolo == "sinicio":
             self._consumir("sinicio")
-            while self.token_atual and self.token_atual.simbolo != "sfim":
+            while self.token_atual and self.token_atual.simbolo != "sfim" and not self.erro:
                 self._analisa_comando_simples()
+            if not self.erro:
+                self._consumir("sfim")
+                if not self.erro:
+                    self._consumir("sponto_virgula")
 
     def _analisa_comando_simples(self):
         """Analisa um comando simples dentro do bloco de comandos."""
@@ -160,7 +169,7 @@ class AnalisadorSintatico:
         elif self.token_atual.simbolo == "sleia":
             self._analisa_leia()
         elif self.token_atual.simbolo == "sinicio":
-            self.analisar_bloco()
+            self._analisa_comandos()
         else:
             print(f"Erro Sintático: Comando inválido ou inesperado '{self.token_atual.lexema}'.")
             self.erro = True
@@ -179,60 +188,54 @@ class AnalisadorSintatico:
         self._consumir("sleia")
         self._consumir("sabre_parenteses")
         if not self.erro:
-            self._consumir("sidentificador")
-            if not self.erro:
+            if not self.erro and self.token_atual.simbolo == "sidentificador":
                 try:
                     self.tabela.buscar_simbolo(self.token_atual.lexema)
                 except ValueError as e:
                     print(f"Erro Semântico: {e}")
                     self.erro = True
-                self._consumir("sfecha_parenteses")
+                self._consumir("sidentificador")
                 if not self.erro:
-                    self._consumir("sponto_virgula")
+                    self._consumir("sfecha_parenteses")
+                    if not self.erro:
+                        self._consumir("sponto_virgula")
 
     def _analisa_escreva(self):
         self._consumir("sescreva")
         self._consumir("sabre_parenteses")
         if not self.erro:
-            self._consumir("sidentificador")
             if not self.erro:
                 try:
                     self.tabela.buscar_simbolo(self.token_atual.lexema)
                 except ValueError as e:
                     print(f"Erro Semântico: {e}")
                     self.erro = True
-                self._consumir("sfecha_parenteses")
+                self._consumir("sidentificador")
                 if not self.erro:
-                    self._consumir("sponto_virgula")
+                    self._consumir("sfecha_parenteses")
+                    if not self.erro:
+                        self._consumir("sponto_virgula")
     
     # AQUI DEVE TER CÓDIGO DE GERAÇÃO DE RÓTULO
     def _analisa_enquanto(self): 
         self._consumir("senquanto")
-        self._consumir("sabre_parenteses")
+        self._analisa_expressao()
         if not self.erro:
-            self._analisa_expressao()
+            self._consumir("sfaca")
             if not self.erro:
-                self._consumir("sfecha_parenteses")
-                if not self.erro:
-                    self._consumir("sfaca")
-                    if not self.erro:
-                        self._analisa_comando_simples()      
+                self._analisa_comando_simples()      
 
     def _analisa_se(self):
         self._consumir("sse")
-        self._consumir("sabre_parenteses")
+        self._analisa_expressao()
         if not self.erro:
-            self._analisa_expressao()
+            self._consumir("sentao")
             if not self.erro:
-                self._consumir("sfecha_parenteses")
-                if not self.erro:
-                    self._consumir("sentao")
+                self._analisa_comando_simples()
+                if not self.erro and self.token_atual and self.token_atual.simbolo == "ssenao":
+                    self._consumir("ssenao")
                     if not self.erro:
                         self._analisa_comando_simples()
-                        if not self.erro and self.token_atual and self.token_atual.simbolo == "ssenao":
-                            self._consumir("ssenao")
-                            if not self.erro:
-                                self._analisa_comando_simples()
 
     def _analisa_subrotinas(self):
         while self.token_atual and self.token_atual.simbolo in ["sprocedimento", "sfuncao"]:
@@ -242,7 +245,6 @@ class AnalisadorSintatico:
             elif self.token_atual.simbolo == "sfuncao":
                 self._consumir("sfuncao")
                 self._analisa_declaracao_funcao()
-            self._consumir("sponto_virgula")
 
     def _analisa_declaracao_procedimento(self):
         if self.token_atual.simbolo == "sidentificador":
@@ -259,10 +261,6 @@ class AnalisadorSintatico:
                         self.tabela.entrar_escopo()
                         self.analisar_bloco()
                         self.tabela.sair_escopo()
-                        if not self.erro:
-                            self._consumir("sfim")
-                            if not self.erro:
-                                self._consumir("sponto_virgula")
 
     def _analisa_declaracao_funcao(self):
         nome_funcao = self.token_atual.lexema
@@ -317,12 +315,12 @@ class AnalisadorSintatico:
 
     def _analisa_fator(self):
         if self.token_atual.simbolo == "sidentificador":
-            self._consumir("sidentificador")
             try:
                 simbolo = self.tabela.buscar_simbolo(self.token_atual.lexema)
             except ValueError as e:
                 print(f"Erro Semântico: {e}")
                 self.erro = True
+            self._consumir("sidentificador")
             if not self.erro and simbolo['tipo'] in ['funcao inteiro', 'funcao booleano']:
                 self._analisa_chamada_funcao()
         elif self.token_atual.simbolo == "snumero":
@@ -345,7 +343,7 @@ class AnalisadorSintatico:
 
     def _analisa_atribuicao(self, simbolo):
         try:
-            _ = self.tabela.buscar_simbolo(simbolo)
+            self.tabela.buscar_simbolo(simbolo)
         except ValueError as e:
             print(f"Erro Semântico: {e}")
             self.erro = True
@@ -356,7 +354,7 @@ class AnalisadorSintatico:
 
     def _analisa_chamada_procedimento(self, simbolo):
         try:
-            _ = self.tabela.buscar_simbolo(simbolo)
+            self.tabela.buscar_simbolo(simbolo)
         except ValueError as e:
             print(f"Erro Semântico: {e}")
             self.erro = True

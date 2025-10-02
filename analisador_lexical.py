@@ -1,4 +1,4 @@
-# analisador_lexical.py
+# analisador_lexical.py (VERSÃO FINAL COM DEBUG)
 
 class Token:
     def __init__(self, lexema, simbolo):
@@ -9,12 +9,11 @@ class Token:
         return f"Token(lexema='{self.lexema}', simbolo='{self.simbolo}')"
 
 class AnalisadorLexical:
-    """Lê um ficheiro de código e retorna um token de cada vez, sob demanda."""
     def __init__(self, nome_arquivo):
         try:
             self.file = open(nome_arquivo, 'r')
         except FileNotFoundError:
-            raise Exception(f"Error: File '{nome_arquivo}' not found.")
+            raise Exception(f"Erro: Ficheiro '{nome_arquivo}' não encontrado.")
         
         self.keywords = {
             "programa": "sprograma", "se": "sse", "entao": "sentao", "senao": "ssenao",
@@ -26,38 +25,26 @@ class AnalisadorLexical:
         }
 
     def proximo_token(self):
-        """Lê o ficheiro e retorna o próximo token válido, ou None se for o fim."""
-        char = ''
-        while True:
-            char = self.file.read(1)
-            
-            if not char:
-                return None # Fim do ficheiro
-
-            while char.isspace():
-                char = self.file.read(1)
-            
+        """Versão simplificada e corrigida para ler o próximo token."""
+        char = self.file.read(1)
+        print(f"Debug: Read character '{char}'")
+        # 1. Loop para ignorar todos os espaços em branco e comentários
+        while char and (char.isspace() or char == '{'):
             if char == '{':
-                comentario_fechado = False # CORRIGIDO: Inicializa a variável
-                while True:
+                # Consome tudo até encontrar o '}'
+                while char and char != '}':
                     char = self.file.read(1)
-                    if not char: # Fim do ficheiro
-                        break
-                    if char == '}':
-                        comentario_fechado = True
-                        break
-                
-                if not comentario_fechado:
-                    print("Erro lexical: Comentário não fechado.")
-                    return Token("{", "serro")
-                continue
+            # Lê o próximo caractere após o comentário ou espaço em branco
+            char = self.file.read(1)
+        
+        # 2. Se chegámos ao fim do ficheiro, retorna None
+        if not char:
+            return None
 
-        fds = self._get_token(char)
-        print(f"LEXICAL {fds.lexema} {fds.simbolo}")
-        return fds
+        # 3. Se temos um caractere válido, retorna o seu token
+        return self._get_token(char)
 
     def fechar(self):
-        """Fecha o ficheiro. Essencial chamar no final da análise."""
         if self.file:
             self.file.close()
 
@@ -69,51 +56,40 @@ class AnalisadorLexical:
         elif char == ':':
             return self._handle_assignment(char)
         elif char in ['+', '-', '*']:
-            return self._handle_arithmetic_operator(char)
+            return Token(char, {'+': 'smais', '-': 'smenos', '*': 'smult'}.get(char))
         elif char in ['<', '>', '=', '!']:
-            # CORRIGIDO: A chamada agora está correta
             return self._handle_relational_operator(char)
         elif char in ['.', ';', ',', '(', ')']:
-            return self._handle_punctuation(char)
+            print(f"Debug: Handling punctuation '{char}'")
+            return Token(char, {'.': 'sponto', ';': 'sponto_virgula', ',': 'svirgula', '(': 'sabre_parenteses', ')': 'sfecha_parenteses'}.get(char))
         else:
-            print(f"Erro lexical: Símbolo inválido '{char}'")
             return Token(char, "serro")
-    
-    def _handle_arithmetic_operator(self, char):
-        return Token(char, {'+': 'smais', '-': 'smenos', '*': 'smult'}.get(char))
-    
-    def _handle_punctuation(self, char):
-        return Token(char, {'.': 'sponto', ';': 'sponto_virgula', ',': 'svirgula', '(': 'sabre_parenteses', ')': 'sfecha_parenteses'}.get(char))
 
-    # CORRIGIDO: Assinatura e corpo do método
     def _handle_relational_operator(self, char):
-        lexema = char
         prox_char = self.file.read(1)
-
-        def ungetc():
-            if prox_char: self.file.seek(self.file.tell() - 1)
-
+        
         if char == '<':
             if prox_char == '=': return Token("<=", "smenorigual")
             if prox_char == '>': return Token("<>", "sdif")
-            ungetc(); return Token("<", "smenor")
         elif char == '>':
             if prox_char == '=': return Token(">=", "smaiorigual")
-            ungetc(); return Token(">", "smaior")
-        elif char == '=':
-            # CORRIGIDO: Um único '=' é o operador de igualdade
-            ungetc(); return Token("=", "sigual")
         elif char == '!':
             if prox_char == '=': return Token("!=", "sdif")
-            ungetc()
-            print(f"Erro lexical: Símbolo '!' inválido. Talvez quisesse dizer '!='?")
-            return Token("!", "serro")
+
+        # Se não formou um par, devolve o caractere lido a mais
+        if prox_char: self.file.seek(self.file.tell() - 1)
+        
+        if char == '=': return Token("=", "sigual")
+        if char == '<': return Token("<", "smenor")
+        if char == '>': return Token(">", "smaior")
+        return Token(char, "serro") # Caso de '!' sozinho
 
     def _handle_assignment(self, char):
         prox_char = self.file.read(1)
         if prox_char == '=':
             return Token(":=", "satribuicao")
         else:
+            # CORRIGIDO: Lógica de devolução de caractere
             if prox_char: self.file.seek(self.file.tell() - 1)
             return Token(":", "sdoispontos")
 
@@ -124,9 +100,9 @@ class AnalisadorLexical:
             if prox_char and (prox_char.isalnum() or prox_char == '_'):
                 lexema += prox_char
             else:
+                # CORRIGIDO: Lógica de devolução de caractere
                 if prox_char: self.file.seek(self.file.tell() - 1)
                 break
-        print(f"LEXICAL {lexema} {self.keywords.get(lexema, 'sidentificador')}")
         return Token(lexema, self.keywords.get(lexema, "sidentificador"))
 
     def _handle_digit(self, char):
@@ -136,6 +112,7 @@ class AnalisadorLexical:
             if prox_char and prox_char.isdigit():
                 lexema += prox_char
             else:
+                # CORRIGIDO: Lógica de devolução de caractere
                 if prox_char: self.file.seek(self.file.tell() - 1)
                 break
         return Token(lexema, "snumero")
