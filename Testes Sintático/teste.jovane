@@ -23,5 +23,5 @@ inicio
            a:= a+b;
         fim;
 
-  escreva(a);
+  escreva(a); vane;
 fim.

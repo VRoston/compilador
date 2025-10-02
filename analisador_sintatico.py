@@ -62,7 +62,7 @@ class AnalisadorSintatico:
             if self.token_atual.simbolo != "serro":
                 print(f"Erro sintático: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado '{simbolo_encontrado}'")
             self.erro = True
-        print(f"SINTATICO {self.token_atual.lexema}")
+        print(self.token_atual.lexema)
     
     def analisar(self):
         self.token_atual = self.lexador.proximo_token()

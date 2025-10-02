@@ -27,7 +27,6 @@ class AnalisadorLexical:
     def proximo_token(self):
         """Versão simplificada e corrigida para ler o próximo token."""
         char = self.file.read(1)
-        print(f"Debug: Read character '{char}'")
         # 1. Loop para ignorar todos os espaços em branco e comentários
         while char and (char.isspace() or char == '{'):
             if char == '{':
@@ -60,7 +59,6 @@ class AnalisadorLexical:
         elif char in ['<', '>', '=', '!']:
             return self._handle_relational_operator(char)
         elif char in ['.', ';', ',', '(', ')']:
-            print(f"Debug: Handling punctuation '{char}'")
             return Token(char, {'.': 'sponto', ';': 'sponto_virgula', ',': 'svirgula', '(': 'sabre_parenteses', ')': 'sfecha_parenteses'}.get(char))
         else:
             return Token(char, "serro")
