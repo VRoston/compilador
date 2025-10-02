@@ -55,6 +55,7 @@ class AnalisadorSintatico:
 
     def _consumir(self, simbolo_esperado):
         """Verifica o token atual e avança para o próximo."""
+        print(f"SINTATICO {self.token_atual}")
         if self.token_atual and self.token_atual.simbolo == simbolo_esperado:
             self.token_atual = self.lexador.proximo_token()
         else:
@@ -73,7 +74,7 @@ class AnalisadorSintatico:
     def _analisar_programa(self): 
         """Analisa a estrutura principal do programa."""     
         self._consumir("sprograma")
-        if not self.erro and self.token_atual.simbolo == "sidentificador":
+        if not self.erro:
             self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='programa')
             self._consumir("sidentificador")
             if not self.erro:
@@ -121,7 +122,9 @@ class AnalisadorSintatico:
         tipo_das_variaveis = None
         if self.token_atual and self.token_atual.simbolo in ["sinteiro", "sbooleano"]:
             tipo_das_variaveis = self.token_atual.lexema # Guarda o tipo (ex: 'inteiro')
+            print(f'SINTATICO {self.token_atual.simbolo}')
             self._consumir(self.token_atual.simbolo)
+            print(f'SINTATICO {self.token_atual.simbolo}')
         else:
             print("Erro sintático: Tipo esperado (inteiro ou booleano)")
             self.erro = True

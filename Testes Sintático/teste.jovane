@@ -2,5 +2,5 @@ programa test1;
     var a,b,c: inteiro;
 
 inicio
-    se(b > (c+ a*a))
-fim
+    leia(a)
+fim.

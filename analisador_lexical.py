@@ -27,15 +27,16 @@ class AnalisadorLexical:
 
     def proximo_token(self):
         """Lê o ficheiro e retorna o próximo token válido, ou None se for o fim."""
+        char = ''
         while True:
             char = self.file.read(1)
             
             if not char:
                 return None # Fim do ficheiro
 
-            if char.isspace():
-                continue
-
+            while char.isspace():
+                char = self.file.read(1)
+            
             if char == '{':
                 comentario_fechado = False # CORRIGIDO: Inicializa a variável
                 while True:
@@ -51,7 +52,9 @@ class AnalisadorLexical:
                     return Token("{", "serro")
                 continue
 
-            return self._get_token(char)
+        fds = self._get_token(char)
+        print(f"LEXICAL {fds.lexema} {fds.simbolo}")
+        return fds
 
     def fechar(self):
         """Fecha o ficheiro. Essencial chamar no final da análise."""
@@ -123,6 +126,7 @@ class AnalisadorLexical:
             else:
                 if prox_char: self.file.seek(self.file.tell() - 1)
                 break
+        print(f"LEXICAL {lexema} {self.keywords.get(lexema, 'sidentificador')}")
         return Token(lexema, self.keywords.get(lexema, "sidentificador"))
 
     def _handle_digit(self, char):
