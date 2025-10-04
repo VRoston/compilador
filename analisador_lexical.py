@@ -1,194 +1,116 @@
+# analisador_lexical.py (VERSÃO FINAL COM DEBUG)
+
 class Token:
     def __init__(self, lexema, simbolo):
         self.lexema = lexema
         self.simbolo = simbolo
 
-KEYWORDS = {
-    "programa": "sprograma",
-    "se": "sse",
-    "entao": "sentao",
-    "senao": "ssenao",
-    "enquanto": "senquanto",
-    "faca": "sfaca",
-    "inicio": "sinicio",
-    "fim": "sfim",
-    "escreva": "sescreva",
-    "leia": "sleia",
-    "var": "svar",
-    "inteiro": "sinteiro",
-    "booleano": "sbooleano",
-    "verdadeiro": "sverdadeiro",
-    "falso": "sfalso",
-    "procedimento": "sprocedimento",
-    "funcao": "sfuncao",
-    "div": "sdiv",
-    "e": "se",
-    "ou": "sou",
-    "nao": "snao",
-}
+    def __repr__(self):
+        return f"Token(lexema='{self.lexema}', simbolo='{self.simbolo}')"
 
-def main():
-    try:
-        nome_arquivo_entrada = './Testes Léxico/teste_7.txt'
-        nome_arquivo_saida = "tabela_simbolos.txt"
+class AnalisadorLexical:
+    def __init__(self, nome_arquivo):
+        try:
+            self.file = open(nome_arquivo, 'r')
+        except FileNotFoundError:
+            raise Exception(f"Erro: Ficheiro '{nome_arquivo}' não encontrado.")
+        
+        self.keywords = {
+            "programa": "sprograma", "se": "sse", "entao": "sentao", "senao": "ssenao",
+            "enquanto": "senquanto", "faca": "sfaca", "inicio": "sinicio", "fim": "sfim",
+            "escreva": "sescreva", "leia": "sleia", "var": "svar", "inteiro": "sinteiro",
+            "booleano": "sbooleano", "verdadeiro": "sverdadeiro", "falso": "sfalso",
+            "procedimento": "sprocedimento", "funcao": "sfuncao", "div": "sdiv",
+            "e": "se", "ou": "sou", "nao": "snao",
+        }
 
-        with open(nome_arquivo_entrada, 'r') as file, open(nome_arquivo_saida, 'w') as out:
-            print("Arquivo de entrada aberto com sucesso!")
-            
-            out.write("Token:\n")
-            out.write(f"{'Lexema':<20} | {'Simbolo':<20}\n")
-            out.write("-" * 20 + "-+-" + "-" * 21 + "\n")
- 
-            while True:
-                char = file.read(1)
- 
-                if not char:
-                    break
+    def proximo_token(self):
+        """Versão simplificada e corrigida para ler o próximo token."""
+        char = self.file.read(1)
+        # 1. Loop para ignorar todos os espaços em branco e comentários
+        while char and (char.isspace() or char == '{'):
+            if char == '{':
+                # Consome tudo até encontrar o '}'
+                while char and char != '}':
+                    char = self.file.read(1)
+            # Lê o próximo caractere após o comentário ou espaço em branco
+            char = self.file.read(1)
+        
+        # 2. Se chegámos ao fim do ficheiro, retorna None
+        if not char:
+            return None
 
-                if char.isspace():
-                    continue
+        # 3. Se temos um caractere válido, retorna o seu token
+        return self._get_token(char)
 
-                if char == '{':
-                    comentario_fechado = False
-                    while char:
-                        char = file.read(1)
-                        if char == '}':
-                            comentario_fechado = True
-                            break
-                    if not comentario_fechado:
-                        token = Token("{", "serro")
-                        out.write(f"{token.lexema:<20} | {token.simbolo:<20}\n")
-                    continue
+    def fechar(self):
+        if self.file:
+            self.file.close()
 
-                token = get_token(char, file)
-     
-                out.write(f"{token.lexema:<20} | {token.simbolo:<20}\n")
+    def _get_token(self, char):
+        if char.isdigit():
+            return self._handle_digit(char)
+        elif char.isalpha():
+            return self._handle_identifier_or_keyword(char)
+        elif char == ':':
+            return self._handle_assignment(char)
+        elif char in ['+', '-', '*']:
+            return Token(char, {'+': 'smais', '-': 'smenos', '*': 'smult'}.get(char))
+        elif char in ['<', '>', '=', '!']:
+            return self._handle_relational_operator(char)
+        elif char in ['.', ';', ',', '(', ')']:
+            return Token(char, {'.': 'sponto', ';': 'sponto_virgula', ',': 'svirgula', '(': 'sabre_parenteses', ')': 'sfecha_parenteses'}.get(char))
+        else:
+            return Token(char, "serro")
 
-            print(f"Análise concluída! Tabela de símbolos salva em '{nome_arquivo_saida}'.")
+    def _handle_relational_operator(self, char):
+        prox_char = self.file.read(1)
+        
+        if char == '<':
+            if prox_char == '=': return Token("<=", "smenorigual")
+            if prox_char == '>': return Token("<>", "sdif")
+        elif char == '>':
+            if prox_char == '=': return Token(">=", "smaiorigual")
+        elif char == '!':
+            if prox_char == '=': return Token("!=", "sdif")
 
-    except FileNotFoundError:
-        print(f"Erro: O arquivo '{nome_arquivo_entrada}' não foi encontrado.")
-    except Exception as e:
-        print(f"Ocorreu um erro inesperado: {e}")
+        # Se não formou um par, devolve o caractere lido a mais
+        if prox_char: self.file.seek(self.file.tell() - 1)
+        
+        if char == '=': return Token("=", "sigual")
+        if char == '<': return Token("<", "smenor")
+        if char == '>': return Token(">", "smaior")
+        return Token(char, "serro") # Caso de '!' sozinho
 
-    print("Fim do arquivo")
-
-def get_token(char, file):
-    if char.isdigit():
-        return handle_digit(char, file)
-    elif char.isalpha():
-        return handle_identifier_or_keyword(char, file)
-    elif char == ':':
-        return handle_assignment(char, file)
-    elif char in ['+', '-', '*']:
-        return handle_arithmetic_operator(char)
-    elif char in ['<', '>', '=', '!']:
-        return handle_relational_operator(char, file)
-    elif char in ['.', ';', ',', '(', ')']:
-        return handle_punctuation(char)
-    else:
-        return Token(char, "serro")
-
-def handle_punctuation(char):
-    lexema = char
-    simbolo_map = {
-        '.': 'sponto',
-        ';': 'sponto_virgula',
-        ',': 'svirgula',
-        '(': 'sabre_parenteses',
-        ')': 'sfecha_parenteses'
-    }
-    simbolo = simbolo_map.get(char, 'serro')
-    return Token(lexema, simbolo)
-    
-def handle_relational_operator(char, file):
-    lexema = char
-    prox_char = file.read(1)
-    if char == '<':
+    def _handle_assignment(self, char):
+        prox_char = self.file.read(1)
         if prox_char == '=':
-            lexema += prox_char
-            return Token(lexema, "smenorigual")
-        elif prox_char == '>':
-            lexema += prox_char
-            return Token(lexema, "sdif")
+            return Token(":=", "satribuicao")
         else:
-            if prox_char:
-                file.seek(file.tell() - 1)
-            return Token(lexema, "smenor")
-    elif char == '>':
-        if prox_char == '=':
-            lexema += prox_char
-            return Token(lexema, "smaiorigual")
-        else:
-            if prox_char:
-                file.seek(file.tell() - 1)
-            return Token(lexema, "smaior")
-    elif char == '=':
-        if prox_char == '=':
-            lexema += prox_char
-            return Token(lexema, "sigual")
-        else:
-            if prox_char:
-                file.seek(file.tell() - 1)
-            return Token(lexema, "serro")
-    elif char == '!':
-        if prox_char == '=':
-            lexema += prox_char
-            return Token(lexema, "sdif")
-        else:
-            if prox_char:
-                file.seek(file.tell() - 1)
-            return Token(lexema, "serro")
-    else:
-        return Token(lexema, "serro")
+            # CORRIGIDO: Lógica de devolução de caractere
+            if prox_char: self.file.seek(self.file.tell() - 1)
+            return Token(":", "sdoispontos")
 
-def handle_arithmetic_operator(char):
-    lexema = char
-    simbolo_map = {
-        '+': 'smais',
-        '-': 'smenos',
-        '*': 'smult'
-    }
-    simbolo = simbolo_map.get(char, 'serro')
-    return Token(lexema, simbolo)
+    def _handle_identifier_or_keyword(self, char):
+        lexema = char
+        while True:
+            prox_char = self.file.read(1)
+            if prox_char and (prox_char.isalnum() or prox_char == '_'):
+                lexema += prox_char
+            else:
+                # CORRIGIDO: Lógica de devolução de caractere
+                if prox_char: self.file.seek(self.file.tell() - 1)
+                break
+        return Token(lexema, self.keywords.get(lexema, "sidentificador"))
 
-def handle_assignment(char, file):
-    lexema = char
-    prox_char = file.read(1)
-    if prox_char == '=':
-        lexema += prox_char
-        return Token(lexema, "satribuicao")
-    else:
-        if prox_char:
-            file.seek(file.tell() - 1)
-        return Token(lexema, "sdoispontos")
-
-
-def handle_identifier_or_keyword(char, file):
-    lexema = char
-    while True:
-        prox_char = file.read(1)
-        if prox_char.isalnum() or prox_char == '_':
-            lexema += prox_char
-        else:
-            if prox_char:
-                file.seek(file.tell() - 1)
-            break
-
-    simbolo = KEYWORDS.get(lexema, "sidentificador")
-    return Token(lexema, simbolo)
-
-def handle_digit(char, file):
-    lexema = char
-    while True:
-        prox_char = file.read(1)
-        if prox_char.isdigit():
-            lexema += prox_char
-        else:
-            if prox_char:
-                file.seek(file.tell() - 1)
-            break
-    return Token(lexema, "snumero")
-
-if __name__ == "__main__":
-    main()
+    def _handle_digit(self, char):
+        lexema = char
+        while True:
+            prox_char = self.file.read(1)
+            if prox_char and prox_char.isdigit():
+                lexema += prox_char
+            else:
+                # CORRIGIDO: Lógica de devolução de caractere
+                if prox_char: self.file.seek(self.file.tell() - 1)
+                break
+        return Token(lexema, "snumero")
