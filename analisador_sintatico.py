@@ -86,10 +86,8 @@ class AnalisadorSintatico:
         self._analisa_et_variaveis()
         if not self.erro:
             self._analisa_subrotinas()
-            if not self.erro and final:
-                self._analisa_comando_final()
-            elif not self.erro:
-                self._analisa_comandos()
+            if not self.erro:
+                self._analisa_comandos(final=final)
 
     def _analisa_et_variaveis(self):
         """Analisa todas as seções de declaração de variáveis."""
@@ -136,25 +134,17 @@ class AnalisadorSintatico:
 
         self._consumir("sponto_virgula")
 
-    def _analisa_comando_final(self):
+    def _analisa_comandos(self, final=False):
         if self.token_atual and self.token_atual.simbolo == "sinicio":
             self._consumir("sinicio")
             while self.token_atual and self.token_atual.simbolo != "sfim" and not self.erro:
                 self._analisa_comando_simples()
             if not self.erro:
                 self._consumir("sfim")
-                if not self.erro:
-                    self._consumir("sponto")
-
-    def _analisa_comandos(self):
-        if self.token_atual and self.token_atual.simbolo == "sinicio":
-            self._consumir("sinicio")
-            while self.token_atual and self.token_atual.simbolo != "sfim" and not self.erro:
-                self._analisa_comando_simples()
-            if not self.erro:
-                self._consumir("sfim")
-                if not self.erro:
+                if not self.erro and not final:
                     self._consumir("sponto_virgula")
+                elif not self.erro:
+                    self._consumir("sponto")
 
     def _analisa_comando_simples(self):
         """Analisa um comando simples dentro do bloco de comandos."""
