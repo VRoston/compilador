@@ -55,14 +55,28 @@ class AnalisadorSintatico:
 
     def _consumir(self, simbolo_esperado):
         """Verifica o token atual e avança para o próximo."""
-        if self.token_atual and self.token_atual.simbolo == simbolo_esperado:
-            self.token_atual = self.lexador.proximo_token()
+        if self.token_atual:
+            simbolo_anterior = self.token_atual.simbolo
+
+            if self.token_atual.simbolo == simbolo_esperado:
+                self.token_atual = self.lexador.proximo_token()
+            else:
+                simbolo_encontrado = self.token_atual.lexema
+                if self.token_atual.simbolo != "serro":
+                    print(f"Erro sintático: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado '{simbolo_encontrado}'")
+                self.erro = True
+                return
+
+            if self.token_atual:
+                if simbolo_anterior == self.token_atual.simbolo and simbolo_anterior not in ["sinicio"]:
+                    print(f"Erro Sintático: Símbolo '{self.token_atual.lexema}' duplicado.")
+                    self.erro = True
+                    return
+
+            if self.token_atual:
+                print(self.token_atual.lexema)
         else:
-            simbolo_encontrado = self.token_atual.lexema if self.token_atual else 'Fim de arquivo'
-            if self.token_atual.simbolo != "serro":
-                print(f"Erro sintático: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado '{simbolo_encontrado}'")
-            self.erro = True
-        print(self.token_atual.lexema)
+            print(f"Erro sintático: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado 'EOF'")
     
     def analisar(self):
         self.token_atual = self.lexador.proximo_token()
@@ -100,14 +114,18 @@ class AnalisadorSintatico:
     def _analisa_variaveis(self):
         """Analisa uma linha de declaração como 'a, b, c : inteiro;'"""
         variaveis_para_declarar = []
-        
-        while self.token_atual and self.token_atual.simbolo == "sidentificador":
+
+        if self.token_atual and self.token_atual.simbolo == "sidentificador" and not self.erro:
             variaveis_para_declarar.append(self.token_atual.lexema)
             self._consumir("sidentificador")
-            if self.token_atual.simbolo == "svirgula" and not self.erro:
-                self._consumir("svirgula")
-            else:
-                break
+
+        while self.token_atual and self.token_atual.simbolo == "svirgula" and not self.erro:
+            self._consumir("svirgula")
+            
+            variavel = self.token_atual.lexema
+            self._consumir("sidentificador")
+            if not self.erro:
+                variaveis_para_declarar.append(variavel)
         
         # 2. Consumir os dois-pontos e o tipo
         self._consumir("sdoispontos")
@@ -146,6 +164,9 @@ class AnalisadorSintatico:
 
             if not self.erro and not final:
                 self._consumir("sponto_virgula")
+        else:
+            print("Erro sintático: Esperado 'inicio' para iniciar o bloco de comandos.")
+            self.erro = True
                     
 
     def _analisa_comando_simples(self, sentao_ssenao = False):
