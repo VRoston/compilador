@@ -157,13 +157,14 @@ class AnalisadorSintatico:
             self._consumir("sinicio")
             while self.token_atual and self.token_atual.simbolo != "sfim" and not self.erro:
                 self._analisa_comando_simples()
+            
+            if not self.erro:
+                self._consumir("sfim")
+                if not self.erro and final:
+                    self._consumir("sponto")
 
-            self._consumir("sfim")
-            if not self.erro and final:
-                self._consumir("sponto")
-
-            if not self.erro and not final:
-                self._consumir("sponto_virgula")
+                if not self.erro and not final:
+                    self._consumir("sponto_virgula")
         else:
             print("Erro sintático: Esperado 'inicio' para iniciar o bloco de comandos.")
             self.erro = True
@@ -236,9 +237,10 @@ class AnalisadorSintatico:
                 except ValueError as e:
                     print(f"Erro Semântico: {e}")
                     self.erro = True
-                self._consumir("sidentificador")
                 if not self.erro:
-                    self._consumir("sfecha_parenteses")
+                    self._consumir("sidentificador")
+                    if not self.erro:
+                        self._consumir("sfecha_parenteses")
 
     def _analisa_escreva(self):
         self._consumir("sescreva")
@@ -329,9 +331,12 @@ class AnalisadorSintatico:
     def _analisa_expressao(self):
         self._analisa_expressao_simples()
         while self.token_atual and self.token_atual.simbolo in ["smaior", "smaiorigual", "smenor", "smenorigual", "sigual", "sdif"]:
-            self._consumir(self.token_atual.simbolo)
             if not self.erro:
-                self._analisa_expressao_simples()
+                self._consumir(self.token_atual.simbolo)
+                if not self.erro:
+                    self._analisa_expressao_simples()
+            else:
+                break
 
     def _analisa_expressao_simples(self):
         if self.token_atual and self.token_atual.simbolo in ["smais", "smenos"]:
@@ -358,9 +363,11 @@ class AnalisadorSintatico:
             except ValueError as e:
                 print(f"Erro Semântico: {e}")
                 self.erro = True
-            self._consumir("sidentificador")
-            if not self.erro and simbolo['tipo'] in ['funcao inteiro', 'funcao booleano']:
-                self._analisa_chamada_funcao()
+            if not self.erro:    
+                self._consumir("sidentificador")
+                if not self.erro and simbolo['tipo'] in ['funcao inteiro', 'funcao booleano']:
+                    self._analisa_chamada_funcao()
+
         elif self.token_atual.simbolo == "snumero":
             self._consumir("snumero")
         elif self.token_atual.simbolo in ["sverdadeiro", "sfalso"]:
