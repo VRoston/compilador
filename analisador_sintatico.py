@@ -63,13 +63,13 @@ class AnalisadorSintatico:
             else:
                 simbolo_encontrado = self.token_atual.lexema
                 if self.token_atual.simbolo != "serro":
-                    print(f"Erro sintático: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado '{simbolo_encontrado}'")
+                    print(f"Erro sintático na linha {self.token_atual.linha}: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado '{simbolo_encontrado}'")
                 self.erro = True
                 return
 
             if self.token_atual:
                 if simbolo_anterior == self.token_atual.simbolo and simbolo_anterior not in ["sinicio"]:
-                    print(f"Erro Sintático: Símbolo '{self.token_atual.lexema}' duplicado.")
+                    print(f"Erro Sintático na linha {self.token_atual.linha}: Símbolo '{self.token_atual.lexema}' duplicado.")
                     self.erro = True
                     return
 
@@ -137,7 +137,7 @@ class AnalisadorSintatico:
             tipo_das_variaveis = self.token_atual.lexema # Guarda o tipo (ex: 'inteiro')
             self._consumir(self.token_atual.simbolo)
         else:
-            print("Erro sintático: Tipo esperado (inteiro ou booleano)")
+            print(f"Erro sintático na linha {self.token_atual.linha}: Tipo esperado (inteiro ou booleano)")
             self.erro = True
             return
 
@@ -147,7 +147,7 @@ class AnalisadorSintatico:
                 try:
                     self.tabela.adicionar_simbolo(nome_var, tipo=tipo_das_variaveis)
                 except ValueError as e:
-                    print(f"Erro Semântico: {e}")
+                    print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                     self.erro = True
 
         self._consumir("sponto_virgula")
@@ -166,7 +166,7 @@ class AnalisadorSintatico:
                 if not self.erro and not final:
                     self._consumir("sponto_virgula")
         else:
-            print("Erro sintático: Esperado 'inicio' para iniciar o bloco de comandos.")
+            print(f"Erro sintático na linha {self.token_atual.linha}: Esperado 'inicio' para iniciar o bloco de comandos.")
             self.erro = True
                     
 
@@ -214,7 +214,7 @@ class AnalisadorSintatico:
         elif self.token_atual.simbolo == "sinicio":
             self._analisa_comandos()
         else:
-            print(f"Erro Sintático: Comando inválido ou inesperado '{self.token_atual.lexema}'.")
+            print(f"Erro Sintático na linha {self.token_atual.linha}: Comando inválido ou inesperado '{self.token_atual.lexema}'.")
             self.erro = True
 
     def _analisa_atrib_chprocedimento(self):
@@ -235,7 +235,7 @@ class AnalisadorSintatico:
                 try:
                     self.tabela.buscar_simbolo(self.token_atual.lexema)
                 except ValueError as e:
-                    print(f"Erro Semântico: {e}")
+                    print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                     self.erro = True
                 if not self.erro:
                     self._consumir("sidentificador")
@@ -250,7 +250,7 @@ class AnalisadorSintatico:
                 try:
                     self.tabela.buscar_simbolo(self.token_atual.lexema)
                 except ValueError as e:
-                    print(f"Erro Semântico: {e}")
+                    print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                     self.erro = True
                 self._consumir("sidentificador")
                 if not self.erro:
@@ -291,7 +291,7 @@ class AnalisadorSintatico:
             try:
                 self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='procedimento')
             except ValueError as e:
-                print(f"Erro Semântico: {e}")
+                print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 self.erro = True
             if not self.erro:
                 self._consumir("sidentificador")
@@ -316,7 +316,7 @@ class AnalisadorSintatico:
                         try:
                             self.tabela.adicionar_simbolo(nome_funcao, tipo=f'funcao {tipo_retorno}')
                         except ValueError as e:
-                            print(f"Erro Semântico: {e}")
+                            print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                             self.erro = True
                         if not self.erro:
                             self._consumir("sponto_virgula")
@@ -325,7 +325,7 @@ class AnalisadorSintatico:
                                 self.analisar_bloco()
                                 self.tabela.sair_escopo()
                 else:
-                    print("Erro sintático: Tipo de retorno esperado (inteiro ou booleano)")
+                    print(f"Erro sintático na linha {self.token_atual.linha}: Tipo de retorno esperado (inteiro ou booleano)")
                     self.erro = True
     
     def _analisa_expressao(self):
@@ -361,7 +361,7 @@ class AnalisadorSintatico:
             try:
                 simbolo = self.tabela.buscar_simbolo(self.token_atual.lexema)
             except ValueError as e:
-                print(f"Erro Semântico: {e}")
+                print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 self.erro = True
             if not self.erro:    
                 self._consumir("sidentificador")
@@ -383,14 +383,14 @@ class AnalisadorSintatico:
             if not self.erro:
                 self._analisa_fator()
         else:
-            print(f"Erro Sintático: Fator inválido ou inesperado '{self.token_atual.lexema}'.")
+            print(f"Erro Sintático na linha {self.token_atual.linha}: Fator inválido ou inesperado '{self.token_atual.lexema}'.")
             self.erro = True
 
     def _analisa_atribuicao(self, simbolo):
         try:
             self.tabela.buscar_simbolo(simbolo)
         except ValueError as e:
-            print(f"Erro Semântico: {e}")
+            print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             self.erro = True
         if not self.erro:
             self._analisa_expressao()
@@ -400,7 +400,7 @@ class AnalisadorSintatico:
         try:
             self.tabela.buscar_simbolo(simbolo)
         except ValueError as e:
-            print(f"Erro Semântico: {e}")
+            print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             self.erro = True
 
     def _analisa_chamada_funcao(self):
