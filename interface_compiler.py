@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import subprocess
 import os
+import re # <<< IMPORTADO
 
 class EditorJovane:
     def __init__(self, root):
@@ -48,6 +49,7 @@ class EditorJovane:
         self.update_linenumbers()
 
     def update_linenumbers(self, event=None):
+        self.text.tag_remove("erro_destacado", "1.0", tk.END) # Limpa destaque de erro
         self.linenumbers.config(state="normal")
         self.linenumbers.delete("1.0", tk.END)
         line_count = int(self.text.index('end-1c').split('.')[0])
@@ -82,17 +84,18 @@ class EditorJovane:
             conteudo = conteudo[:-1]  # Remove o último '\n'
         with open(self.file_path, "w", encoding="utf-8") as f:
             f.write(conteudo)
-        messagebox.showinfo("Salvo", "Arquivo salvo com sucesso!")
+        # Removido o messagebox daqui para focar na execução
+        # messagebox.showinfo("Salvo", "Arquivo salvo com sucesso!")
 
     def executar_analisador(self):
         if not self.file_path:
             messagebox.showwarning("Aviso", "Salve o arquivo antes de executar.")
             return
-        self.salvar_arquivo()
+        self.salvar_arquivo() # Salva automaticamente
         try:
             resultado = subprocess.run(
                 ["python3", "analisador_sintatico.py", self.file_path],
-                capture_output=True, text=True
+                capture_output=True, text=True, encoding='utf-8'
             )
             saida = resultado.stdout + resultado.stderr
             self.mostrar_saida(saida)
@@ -100,15 +103,32 @@ class EditorJovane:
             self.mostrar_saida(f"Erro ao executar: {e}")
 
     def mostrar_saida(self, saida):
+        """Exibe a saída completa e destaca as linhas com erro."""
         self.output.config(state="normal")
         self.output.delete(1.0, tk.END)
-        linhas_erro = [line for line in saida.splitlines() if "linha" in line]
-        for idx, line in enumerate(linhas_erro, 1):
-            self.output.insert(tk.END, line + "\n")
-            start = f"{idx}.0"
-            end = f"{idx}.end"
-            self.output.tag_add("erro", start, end)
+        self.output.insert(tk.END, saida) # Insere a saída completa
+
+        # Configura a tag de erro
         self.output.tag_configure("erro", foreground="red", underline=True)
+
+        # Itera sobre a saída para encontrar e 'taggear' erros
+        start_index = "1.0"
+        while True:
+            # Procura a palavra 'linha' para identificar um erro
+            pos = self.output.search("linha", start_index, stopindex=tk.END)
+            if not pos:
+                break
+            
+            # Pega o início e o fim da linha encontrada
+            line_start = f"{pos.split('.')[0]}.0"
+            line_end = f"{pos.split('.')[0]}.end"
+            
+            # Adiciona a tag 'erro' a essa linha
+            self.output.tag_add("erro", line_start, line_end)
+            
+            # Atualiza o índice inicial para a próxima busca
+            start_index = line_end
+
         self.output.config(state="disabled")
         self.output.bind("<Button-1>", self.on_output_click)
 
@@ -117,7 +137,7 @@ class EditorJovane:
         self.text.tag_remove("erro_destacado", "1.0", tk.END)
         index = self.output.index(f"@{event.x},{event.y}")
         line_content = self.output.get(f"{index} linestart", f"{index} lineend")
-        import re
+        
         match = re.search(r"linha (\d+)", line_content)
         if match:
             linha = int(match.group(1))
@@ -127,15 +147,6 @@ class EditorJovane:
             # Destaca a linha
             self.text.tag_add("erro_destacado", f"{linha}.0", f"{linha}.0 lineend")
             self.text.tag_configure("erro_destacado", background="#ffcccc")
-
-    def update_linenumbers(self, event=None):
-        self.text.tag_remove("erro_destacado", "1.0", tk.END)
-        self.linenumbers.config(state="normal")
-        self.linenumbers.delete("1.0", tk.END)
-        line_count = int(self.text.index('end-1c').split('.')[0])
-        linenums = "\n".join(str(i) for i in range(1, line_count + 1))
-        self.linenumbers.insert("1.0", linenums)
-        self.linenumbers.config(state="disabled")
 
 if __name__ == "__main__":
     root = tk.Tk()
