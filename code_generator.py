@@ -1,12 +1,13 @@
 # code_generator.py
 # Gerador de código para a MVD didática.
-# Produz instruções em formato textual e grava em um arquivo .mvd
+# Mantém toda a lógica original, mas adiciona indentação visual no arquivo .mvd
 
 class CodeGenerator:
     def __init__(self, filename="output.mvd"):
         self.instructions = []
         self.label_counter = 0
         self.filename = filename
+        self.indent = " " * 4  # 4 espaços de indentação
 
     # Helpers básicos
     def new_label(self):
@@ -14,17 +15,20 @@ class CodeGenerator:
         self.label_counter += 1
         return lbl
 
-    def emit(self, instr):
-        """Adiciona uma instrução (string)."""
-        self.instructions.append(instr)
+    def emit(self, instr, indent=True):
+        """Adiciona uma instrução com indentação padrão (exceto rótulos)."""
+        if indent:
+            self.instructions.append(f"{self.indent}{instr}")
+        else:
+            self.instructions.append(instr)
 
     def emit_label(self, label):
-        """Adiciona uma label (formatada como: Lx  NULL)."""
-        self.instructions.append(f"{label}  NULL")
+        """Adiciona um rótulo (sem indentação)."""
+        self.emit(f"{label}  NULL", indent=False)
 
     # Programa / memória
     def start_program(self):
-        self.emit("START")
+        self.emit("START", indent=False)
 
     def alloc(self, n):
         if n > 0:
@@ -35,16 +39,13 @@ class CodeGenerator:
             self.emit(f"DALLOC {n}")
 
     def halt(self):
-        self.emit("HLT")
+        self.emit("HLT", indent=False)
 
     # Constantes / variáveis
     def ldc(self, value):
-        # Load constant
         self.emit(f"LDC {value}")
 
     def ldv(self, addr_or_name):
-        # Load variable at address
-        # addr_or_name may be integer address or a name (the parser can pass address)
         self.emit(f"LDV {addr_or_name}")
 
     def str_(self, addr_or_name):
@@ -68,7 +69,7 @@ class CodeGenerator:
         self.emit("MULT")
 
     def div(self):
-        self.emit("DIV")
+        self.emit("DIVI")  # mantém compatível com sua MVD atual
 
     def and_(self):
         self.emit("AND")
@@ -79,23 +80,19 @@ class CodeGenerator:
     def not_(self):
         self.emit("NOT")
 
-    # Comparisons (names from notes: CMA, CMEQ, etc.)
-    def cmeq(self):
-        self.emit("CMEQ")  # <= ? depends on naming; adapt if needed
-
+    # Comparisons
     def cma(self):
-        self.emit("CMA")   # >  (compare maior)
+        self.emit("CMA")   # >
     def cme(self):
-        self.emit("CME")   # <  (compare menor)
-
+        self.emit("CME")   # <
     def cmae(self):
-        self.emit("CMAQ")  # >= (compare maior ou igual)
-
+        self.emit("CMAE")  # >=
     def cmee(self):
-        self.emit("CMEQ")  # <= (compare menor ou igual)
-
+        self.emit("CMEE")  # <=
     def cmeq_eq(self):
-        self.emit("CMEQ")  # <= / == vary by naming in VM
+        self.emit("CMEQ")  # ==
+    def cmdif(self):
+        self.emit("CMDIF") # !=
 
     # Jumps
     def jmp(self, label):

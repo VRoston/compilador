@@ -127,6 +127,12 @@ class AnalisadorSintatico:
 
         if not self.erro and not final and num_vars > 0:
             self.codegen.daloc(num_vars)
+        # Inicializa todas as variáveis globais com 0 no início do programa
+        if nivel == 0 and num_vars > 0:
+            for var in self.tabela.escopos[nivel]:
+                self.codegen.ldc(0)
+                self.codegen.str_(self.tabela.escopos[nivel][var]['memoria'])
+
 
     def _analisa_et_variaveis(self):
         """Analisa todas as seções de declaração de variáveis."""
