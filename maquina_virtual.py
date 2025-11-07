@@ -1,134 +1,160 @@
 # maquina_virtual.py
+# Máquina Virtual para executar código MVD gerado pelo compilador
+
 import sys
 
 class MaquinaVirtual:
-    def __init__(self, arquivo, debug=False, cpu_limit=10000, mem_limit=1000):
-        self.debug = debug
-        self.cpu_limit = cpu_limit
-        self.mem_limit = mem_limit
-        self.ciclos = 0
-
+    def __init__(self, arquivo, debug=False):
         with open(arquivo, 'r') as f:
             self.codigo = [linha.strip() for linha in f if linha.strip()]
-
-        self.memoria = [0] * self.mem_limit
+        self.memoria = [0] * 1000
         self.pilha = []
         self.pc = 0
         self.rotulos = self._mapear_rotulos()
+        self.debug = debug
+        self.instr_count = 0
 
     def _mapear_rotulos(self):
+        """Mapeia rótulos (Lx NULL) para índices."""
         rotulos = {}
         for i, linha in enumerate(self.codigo):
-            partes = linha.split()
-            if partes[0].endswith(':'):
-                rotulos[partes[0][:-1]] = i
-            elif len(partes) == 2 and partes[1] == "NULL":
-                rotulos[partes[0]] = i
+            if linha.startswith("L") and "NULL" in linha:
+                nome = linha.split()[0]
+                rotulos[nome] = i
         return rotulos
 
+    def _ler_valor(self, mensagem="Digite um valor: "):
+        while True:
+            try:
+                return int(input(mensagem))
+            except ValueError:
+                print("Valor inválido. Digite um número inteiro.")
+
     def rodar(self):
+        """Executa o código MVD."""
         while self.pc < len(self.codigo):
-            if self.ciclos > self.cpu_limit:
-                print("\n⛔ ERRO: Limite de CPU excedido! (possível loop infinito)")
+            linha = self.codigo[self.pc]
+            partes = linha.split()
+            op = partes[0].upper()
+            self.instr_count += 1
+
+            if self.instr_count > 10000:
+                print("Erro: Execução interrompida (loop infinito detectado).")
                 break
 
-            instrucao = self.codigo[self.pc]
-            partes = instrucao.split()
-            op = partes[0].upper()
-
-            # pula labels
-            if op.endswith(":") or (len(partes) == 2 and partes[1] == "NULL"):
+            # Ignorar rótulos
+            if op.startswith("L") and "NULL" in linha:
                 self.pc += 1
                 continue
 
             if self.debug:
-                print(f"[{self.pc:03}] {instrucao:<15} | PILHA: {self.pilha} | MEM[0..10]: {self.memoria[:10]}")
+                print(f"[{self.pc:03}] {linha:<15} | PILHA: {self.pilha} | MEM[0..10]: {self.memoria[:10]}")
 
-            if op == 'START':
-                pass
-            elif op == 'LDC':
-                self.pilha.append(int(partes[1]))
-            elif op == 'LDV':
-                addr = int(partes[1])
-                self._checar_mem(addr)
-                self.pilha.append(self.memoria[addr])
-            elif op == 'STR':
-                addr = int(partes[1])
-                self._checar_mem(addr)
-                val = self.pilha.pop()
-                self.memoria[addr] = val
-            elif op == 'ADD':
-                b, a = self.pilha.pop(), self.pilha.pop()
-                self.pilha.append(a + b)
-            elif op == 'SUB':
-                b, a = self.pilha.pop(), self.pilha.pop()
-                self.pilha.append(a - b)
-            elif op == 'MULT':
-                b, a = self.pilha.pop(), self.pilha.pop()
-                self.pilha.append(a * b)
-            elif op in ['DIV', 'DIVI']:
-                b, a = self.pilha.pop(), self.pilha.pop()
-                self.pilha.append(a // b if b != 0 else 0)
-            elif op == 'RD':
-                val = int(input("Digite um valor: "))
-                self.pilha.append(val)
-            elif op == 'PRN':
-                print(self.pilha[-1] if self.pilha else 0)
-            elif op == 'JMP':
-                self.pc = self.rotulos.get(partes[1], self.pc)
-                continue
-            elif op == 'JMPF':
-                cond = self.pilha.pop()
-                if cond == 0:
-                    self.pc = self.rotulos.get(partes[1], self.pc)
+            # === Instruções ===
+            try:
+                if op == "START":
+                    pass
+                elif op in ("HLT", "HALT"):
+                    print("Execução finalizada.")
+                    break
+                elif op == "ALLOC":
+                    # Pode ser ALLOC <n> ou ALLOC <base> <n>
+                    if len(partes) == 2:
+                        base = 0
+                        n = int(partes[1])
+                    else:
+                        base = int(partes[1])
+                        n = int(partes[2])
+                    for i in range(n):
+                        self.pilha.append(self.memoria[base + i])
+                elif op == "DALLOC":
+                    if len(partes) == 2:
+                        base = 0
+                        n = int(partes[1])
+                    else:
+                        base = int(partes[1])
+                        n = int(partes[2])
+                    for i in range(n - 1, -1, -1):
+                        self.memoria[base + i] = self.pilha.pop()
+                elif op == "LDC":
+                    self.pilha.append(int(partes[1]))
+                elif op == "LDV":
+                    self.pilha.append(self.memoria[int(partes[1])])
+                elif op == "STR":
+                    endereco = int(partes[1])
+                    self.memoria[endereco] = self.pilha.pop()
+                elif op == "ADD":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(a + b)
+                elif op == "SUB":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(a - b)
+                elif op == "MULT":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(a * b)
+                elif op in ("DIV", "DIVI"):
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(a // b if b != 0 else 0)
+                elif op == "AND":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(1 if a and b else 0)
+                elif op == "OR":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(1 if a or b else 0)
+                elif op == "NOT":
+                    a = self.pilha.pop()
+                    self.pilha.append(0 if a else 1)
+                elif op == "CMA":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(1 if a > b else 0)
+                elif op == "CME":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(1 if a < b else 0)
+                elif op == "CMEQ":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(1 if a == b else 0)
+                elif op == "CMAQ":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(1 if a >= b else 0)
+                elif op == "CMEE":
+                    b, a = self.pilha.pop(), self.pilha.pop()
+                    self.pilha.append(1 if a <= b else 0)
+                elif op == "JMP":
+                    label = partes[1]
+                    self.pc = self.rotulos.get(label, self.pc)
                     continue
-            elif op == 'ALLOC':
-                base = int(partes[1])
-                n = int(partes[2]) if len(partes) > 2 else 1
-                for i in range(n):
-                    self.pilha.append(self.memoria[base + i])
-            elif op == 'DALLOC':
-                base = int(partes[1])
-                n = int(partes[2]) if len(partes) > 2 else 1
-                for i in range(n - 1, -1, -1):
-                    self._checar_mem(base + i)
-                    self.memoria[base + i] = self.pilha.pop()
-            elif op in ['CMA', 'CME', 'CMAQ', 'CMEQ', 'CMEQ_EQ', 'CMEQ_EQ_NOT']:
-                b, a = self.pilha.pop(), self.pilha.pop()
-                if op == 'CMA': self.pilha.append(1 if a > b else 0)
-                elif op == 'CME': self.pilha.append(1 if a < b else 0)
-                elif op == 'CMAQ': self.pilha.append(1 if a >= b else 0)
-                elif op == 'CMEQ': self.pilha.append(1 if a <= b else 0)
-                elif op == 'CMEQ_EQ': self.pilha.append(1 if a == b else 0)
-                elif op == 'CMEQ_EQ_NOT': self.pilha.append(1 if a != b else 0)
-            elif op == 'AND':
-                b, a = self.pilha.pop(), self.pilha.pop()
-                self.pilha.append(1 if (a and b) else 0)
-            elif op == 'OR':
-                b, a = self.pilha.pop(), self.pilha.pop()
-                self.pilha.append(1 if (a or b) else 0)
-            elif op == 'NOT':
-                a = self.pilha.pop()
-                self.pilha.append(0 if a else 1)
-            elif op in ['HLT', 'HALT']:
-                print("✅ Execução finalizada com sucesso.")
-                break
-            else:
-                print(f"Instrução desconhecida: {instrucao}")
+                elif op == "JMPF":
+                    cond = self.pilha.pop()
+                    label = partes[1]
+                    if cond == 0:
+                        self.pc = self.rotulos.get(label, self.pc)
+                        continue
+                elif op == "RD":
+                    valor = self._ler_valor()
+                    self.pilha.append(valor)
+                elif op == "PRN":
+                    if self.pilha:
+                        print(self.pilha[-1])
+                    else:
+                        print("Erro: pilha vazia em PRN")
+                else:
+                    print(f"Instrução desconhecida: {linha}")
+                    break
+            except Exception as e:
+                print(f"Erro em '{linha}': {e}")
                 break
 
             self.pc += 1
-            self.ciclos += 1
 
-    def _checar_mem(self, addr):
-        if addr < 0 or addr >= self.mem_limit:
-            raise RuntimeError(f"Endereço de memória inválido: {addr}")
+
+# ============================ MAIN ============================
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Uso: python maquina_virtual.py <arquivo.mvd> [--debug]")
         sys.exit(1)
 
+    arquivo = sys.argv[1]
     debug = "--debug" in sys.argv
-    mv = MaquinaVirtual(sys.argv[1], debug=debug)
+    mv = MaquinaVirtual(arquivo, debug=debug)
     mv.rodar()
