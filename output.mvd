@@ -1,0 +1,76 @@
+START
+    JMP L0
+L0  NULL
+    ALLOC 4
+L1  NULL
+    ALLOC 3
+    LDV 24
+    LDC 1
+    CMA
+    JMPF L2
+    LDC 0
+    STR 24
+    JMP L3
+L2  NULL
+L3  NULL
+    RD
+    STR 28
+L4  NULL
+    LDV 20
+    LDC 89
+    CMEQ
+    NOT
+    LDV 20
+    LDC 1000
+    CMEE
+    AND
+    JMPF L5
+    LDV 24
+    LDV 28
+    ADD
+    STR 20
+    JMP L4
+L5  NULL
+    LDV 20
+    PRN
+    DALLOC 3
+    DALLOC 3
+L6  NULL
+    RD
+    STR 4
+    LDV 4
+    LDV 4
+    MULT
+    LDV 12
+    LDV 8
+    DIVI
+    ADD
+    STR 8
+    LDV 8
+    LDV 12
+    LDV 4
+    LDV 4
+    MULT
+    ADD
+    CMA
+    JMPF L7
+    LDV 8
+    PRN
+    JMP L8
+L7  NULL
+    LDV 12
+    PRN
+L8  NULL
+    LDC 0
+    STR 0
+    LDC 0
+    STR 4
+    LDC 0
+    STR 8
+    LDC 0
+    STR 12
+    LDC 0
+    STR 16
+    LDC 0
+    STR 32
+HLT

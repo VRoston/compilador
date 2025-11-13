@@ -1,0 +1,153 @@
+{ Programa complexo de teste para o compilador }
+programa complexo_teste;
+
+var
+  n, i, j, a, b, c, t, tmp, soma, produto, maximo, minimo: inteiro;
+  ordenado, tem_primo, paridade: booleano;
+
+{ lê N e N valores, calcula soma, produto, máximo e mínimo }
+procedimento le_e_analisa;
+var k, val: inteiro;
+    primeiro: booleano;
+inicio
+  leia(n);
+  se n <= 0 entao
+     inicio
+       escreva(0);
+       escreva(0);
+       escreva(0);
+       escreva(0);
+     fim; { termina leitura inválida }
+  soma := 0;
+  produto := 1;
+  primeiro := verdadeiro;
+  k := 0;
+  enquanto k < n faca inicio
+      leia(val);
+      soma := soma + val;
+      produto := produto * val;
+      se primeiro entao
+         inicio
+           maximo := val;
+           minimo := val;
+           primeiro := falso;
+         fim
+      senao
+         inicio
+           se val > maximo entao maximo := val;
+           se val < minimo entao minimo := val;
+         fim;
+      k := k + 1;
+  fim;
+  escreva(soma);
+  escreva(produto);
+  escreva(maximo);
+  escreva(minimo);
+fim;
+
+{ verifica se um número é primo (simples, O(sqrt(n))) }
+procedimento verifica_primo;
+var num, d: inteiro;
+    primo: booleano;
+inicio
+  leia(num);
+  se num <= 1 entao
+     inicio
+       escreva(0); { não primo }
+       fim
+  primo := verdadeiro;
+  d := 2;
+  enquanto (d*d <= num) e primo faca inicio
+      se (num mod d) = 0 entao primo := falso;
+      d := d + 1;
+  fim;
+  se primo entao escreva(1) senao escreva(0);
+fim;
+
+{ calcula MDC por algoritmo de Euclides }
+procedimento mdc;
+var x, y: inteiro;
+inicio
+  leia(x);
+  leia(y);
+  enquanto y != 0 faca inicio
+      tmp := x mod y;
+      x := y;
+      y := tmp;
+  fim;
+  escreva(x);
+fim;
+
+{ analisa expressão booleana e demonstra uso de coerção booleana->inteiro }
+procedimento expressao_complexa;
+var p, q, r: inteiro;
+    flag: booleano;
+inicio
+  leia(p); leia(q); leia(r);
+  flag := (p > q) e nao (r = 0) ou ( (p mod 2) = 0 );
+  { usa coerção implícita: soma := soma + flag }
+  se flag entao
+     inicio
+       escreva(1);
+     fim
+  senao
+     inicio
+       escreva(0);
+     fim;
+  soma := soma + flag; { true conta como 1, false como 0 }
+  escreva(soma);
+fim;
+
+{ demonstra escopo de variáveis locais e somas condicionais }
+procedimento escopo_e_contagem;
+var a, x, y: inteiro;
+    ok: booleano;
+inicio
+  a := 0;
+  ok := verdadeiro;
+  x := 1;
+  enquanto x <= 10 faca inicio
+      y := x * x - (x div 2);
+      se (y mod 3) = 0 entao
+         inicio
+           a := a + y;
+         fim
+      senao
+         inicio
+           ok := nao ok; { alterna booleano local }
+         fim;
+      x := x + 1;
+  fim;
+  escreva(a);
+  escreva(ok);
+  { soma local volta para global usando variável global 'a' }
+  soma := soma + a;
+fim;
+
+inicio
+  { inicializações globais }
+  soma := 0;
+  produto := 1;
+  ordenado := verdadeiro;
+  tem_primo := falso;
+  { chamadas: sequência para testar várias rotinas }
+  le_e_analisa;
+  verifica_primo;
+  mdc;
+  expressao_complexa;
+  escopo_e_contagem;
+
+  { combinação final: condições compostas e chamadas repetidas }
+  i := 0;
+  enquanto i < 3 faca inicio
+      escreva(i);
+      i := i + 1;
+  fim;
+
+  se (soma > produto) e (maximo != minimo) entao
+      escreva(maximo)
+  senao
+      escreva(minimo);
+
+  { fim do programa }
+fim.
