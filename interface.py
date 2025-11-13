@@ -3,10 +3,10 @@ from tkinter import filedialog, messagebox
 import subprocess
 import os
 
-class EditorJovane:
+class EditorTxt:
     def __init__(self, root):
         self.root = root
-        self.root.title("Editor Jovane")
+        self.root.title("Editor txt")
         self.file_path = None
 
         # Barra de botões no topo
@@ -111,7 +111,7 @@ class EditorJovane:
 
     def abrir_arquivo(self):
         caminho = filedialog.askopenfilename(
-            filetypes=[("Arquivos Jovane", "*.jovane"), ("Todos os arquivos", "*.*")]
+            filetypes=[("Arquivos txt", "*.txt"), ("Todos os arquivos", "*.*")]
         )
         if caminho:
             with open(caminho, "r", encoding="utf-8") as f:
@@ -119,14 +119,14 @@ class EditorJovane:
             self.text.delete(1.0, tk.END)
             self.text.insert(tk.END, conteudo)
             self.file_path = caminho
-            self.root.title(f"Editor Jovane - {os.path.basename(caminho)}")
+            self.root.title(f"Editor txt - {os.path.basename(caminho)}")
             self.update_linenumbers()
 
     def salvar_arquivo(self):
         if not self.file_path:
             caminho = filedialog.asksaveasfilename(
-                defaultextension=".jovane",
-                filetypes=[("Arquivos Jovane", "*.jovane"), ("Todos os arquivos", "*.*")]
+                defaultextension=".txt",
+                filetypes=[("Arquivos txt", "*.txt"), ("Todos os arquivos", "*.*")]
             )
             if not caminho:
                 return
@@ -189,5 +189,5 @@ class EditorJovane:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = EditorJovane(root)
+    app = EditorTxt(root)
     root.mainloop()

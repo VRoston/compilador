@@ -75,8 +75,6 @@ class AnalisadorSintatico:
                     self.erro = True
                     return
 
-            if self.token_atual:
-                print(self.token_atual.lexema)
         else:
             print(f"Erro sintático: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado 'EOF'")
 
@@ -539,16 +537,16 @@ class AnalisadorSintatico:
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Erro: Modo de uso incorreto.")
-        print("Uso: python analisador_sintatico.py <caminho_para_o_arquivo.jovane>")
+        print("Uso: python analisador_sintatico.py <caminho_para_o_arquivo.txt>")
         sys.exit(1)
 
     caminho_arquivo = sys.argv[1]
 
     nome_base, extensao = os.path.splitext(caminho_arquivo)
 
-    if extensao != '.jovane':
+    if extensao != '.txt':
         print(f"Erro: O arquivo '{caminho_arquivo}' não é válido.")
-        print("Por favor, forneça um arquivo .jovane")
+        print("Por favor, forneça um arquivo .txt")
         sys.exit(1)
 
     try:
