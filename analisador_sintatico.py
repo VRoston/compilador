@@ -2,13 +2,17 @@ import sys
 import os
 from analisador_lexical import AnalisadorLexical, Token
 from tabela_simbolos import TabelaSimbolos
+from code_generator import Gera
 
 class AnalisadorSintatico:
     def __init__(self, arquivo_entrada):
-        self.lexador = AnalisadorLexical(arquivo_entrada)
         self.token_atual = None
         self.erro = False
+        self.expressao = []
+
+        self.lexador = AnalisadorLexical(arquivo_entrada)
         self.tabela = TabelaSimbolos()
+        self.gera = Gera()
 
         self.keywords = {
             "sprograma": "programa",
@@ -81,6 +85,7 @@ class AnalisadorSintatico:
     def analisar(self):
         self.token_atual = self.lexador.proximo_token()
         self._analisar_programa()
+        self.gera.escreve()
         self.lexador.fechar()
 
     # AQUI DEVE TER CÓDIGO DE GERAÇÃO DE RÓTULO
@@ -411,16 +416,16 @@ class AnalisadorSintatico:
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Erro: Modo de uso incorreto.")
-        print("Uso: python analisador_sintatico.py <caminho_para_o_arquivo.jovane>")
+        print("Uso: python analisador_sintatico.py <caminho_para_o_arquivo.txt>")
         sys.exit(1) 
 
     caminho_arquivo = sys.argv[1]
     
     nome_base, extensao = os.path.splitext(caminho_arquivo)
 
-    if extensao != '.jovane':
+    if extensao != '.txt':
         print(f"Erro: O arquivo '{caminho_arquivo}' não é válido.")
-        print("Por favor, forneça um arquivo .jovane")
+        print("Por favor, forneça um arquivo .txt")
         sys.exit(1)
     
     try:
