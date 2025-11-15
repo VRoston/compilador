@@ -1,7 +1,8 @@
 import sys
 import os
-from analisador_lexical import AnalisadorLexical, Token
+from analisador_lexical import AnalisadorLexical
 from tabela_simbolos import TabelaSimbolos
+from tabela_simbolos import posfix
 from code_generator import Gera
 
 class AnalisadorSintatico:
@@ -264,7 +265,7 @@ class AnalisadorSintatico:
     # AQUI DEVE TER CÓDIGO DE GERAÇÃO DE RÓTULO
     def _analisa_enquanto(self): 
         self._consumir("senquanto")
-        self._analisa_expressao()
+        self._expressao()
         if not self.erro:
             self._consumir("sfaca")
             if not self.erro:
@@ -272,7 +273,7 @@ class AnalisadorSintatico:
 
     def _analisa_se(self):
         self._consumir("sse")
-        self._analisa_expressao()
+        self._expressao()
         if not self.erro:
             self._consumir("sentao")
             if not self.erro:
@@ -332,11 +333,22 @@ class AnalisadorSintatico:
                 else:
                     print(f"Erro sintático na linha {self.token_atual.linha}: Tipo de retorno esperado (inteiro ou booleano)")
                     self.erro = True
-    
+                    
+    def _expressao(self):
+        self._analisa_expressao()
+        self.expressao.append(None)
+        if not self.erro:
+            posfixa = posfix(self.expressao)
+            print(f"Notação Pós-fixa: {posfixa}")
+            
+        print(self.expressao)
+        self.expressao = []
+
     def _analisa_expressao(self):
         self._analisa_expressao_simples()
         while self.token_atual and self.token_atual.simbolo in ["smaior", "smaiorigual", "smenor", "smenorigual", "sigual", "sdif"]:
             if not self.erro:
+                self.expressao.append(self.token_atual.lexema)
                 self._consumir(self.token_atual.simbolo)
                 if not self.erro:
                     self._analisa_expressao_simples()
@@ -345,11 +357,13 @@ class AnalisadorSintatico:
 
     def _analisa_expressao_simples(self):
         if self.token_atual and self.token_atual.simbolo in ["smais", "smenos"]:
+            self.expressao.append(self.token_atual.lexema)
             self._consumir(self.token_atual.simbolo)
         
         self._analisa_termo()
         
         while self.token_atual and self.token_atual.simbolo in ["smais", "smenos", "sou", "se"]:
+            self.expressao.append(self.token_atual.lexema)
             self._consumir(self.token_atual.simbolo)
             if not self.erro:
                 self._analisa_termo()
@@ -357,6 +371,7 @@ class AnalisadorSintatico:
     def _analisa_termo(self):
         self._analisa_fator()
         while self.token_atual and self.token_atual.simbolo in ["smult", "sdiv", "se", "sou"]:
+            self.expressao.append(self.token_atual.lexema)
             self._consumir(self.token_atual.simbolo)
             if not self.erro:
                 self._analisa_fator()
@@ -368,22 +383,28 @@ class AnalisadorSintatico:
             except ValueError as e:
                 print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 self.erro = True
-            if not self.erro:    
+            if not self.erro:
+                self.expressao.append(self.token_atual.lexema)    
                 self._consumir("sidentificador")
                 if not self.erro and simbolo['tipo'] in ['funcao inteiro', 'funcao booleano']:
                     self._analisa_chamada_funcao()
 
         elif self.token_atual.simbolo == "snumero":
+            self.expressao.append(self.token_atual.lexema)
             self._consumir("snumero")
         elif self.token_atual.simbolo in ["sverdadeiro", "sfalso"]:
+            self.expressao.append(self.token_atual.lexema)
             self._consumir(self.token_atual.simbolo)
         elif self.token_atual.simbolo == "sabre_parenteses":
+            self.expressao.append(self.token_atual.lexema)
             self._consumir("sabre_parenteses")
             if not self.erro:
                 self._analisa_expressao()
                 if not self.erro:
+                    self.expressao.append(self.token_atual.lexema)
                     self._consumir("sfecha_parenteses")
         elif self.token_atual.simbolo == "snao":
+            self.expressao.append(self.token_atual.lexema)
             self._consumir("snao")
             if not self.erro:
                 self._analisa_fator()
@@ -398,9 +419,8 @@ class AnalisadorSintatico:
             print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             self.erro = True
         if not self.erro:
-            self._analisa_expressao()
+            self._expressao()
             
-
     def _analisa_chamada_procedimento(self, simbolo):
         try:
             self.tabela.buscar_simbolo(simbolo)
