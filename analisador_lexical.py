@@ -22,7 +22,7 @@ class AnalisadorLexical:
             "procedimento": "sprocedimento", "funcao": "sfuncao", "div": "sdiv",
             "e": "se", "ou": "sou", "nao": "snao",
         }
-        self.linha_atual = 1
+        self.linha_atual = 0
 
     def proximo_token(self):
         """Versão simplificada e corrigida para ler o próximo token."""

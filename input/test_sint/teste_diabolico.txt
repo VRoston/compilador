@@ -13,10 +13,10 @@ inicio
   leia(n);
   se n <= 0 entao
      inicio
-       escreva(0);
-       escreva(0);
-       escreva(0);
-       escreva(0);
+       escreva(n);
+       escreva(n);
+       escreva(n);
+       escreva(n);
      fim; { termina leitura inválida }
   soma := 0;
   produto := 1;
@@ -31,7 +31,7 @@ inicio
            maximo := val;
            minimo := val;
            primeiro := falso;
-         fim
+         fim;
       senao
          inicio
            se val > maximo entao maximo := val;

@@ -1,19 +1,28 @@
 import sys
 import os
 from analisador_lexical import AnalisadorLexical
-from tabela_simbolos import TabelaSimbolos
-from tabela_simbolos import posfix
+from analisador_semantico import TabelaSimbolos, posfix, tipo_expressao
 from code_generator import Gera
 
+class Rotulo:
+    contador = 1  # Começa em 1
+
+    def __new__(cls):
+        rotulo = f"L{cls.contador}"
+        cls.contador += 1
+        return rotulo
+
 class AnalisadorSintatico:
-    def __init__(self, arquivo_entrada):
+    def __init__(self, arquivo_entrada, arquivo_saida):
         self.token_atual = None
         self.erro = False
         self.expressao = []
+        self.qtd_var = 0
+        self.nome_programa = ""
 
         self.lexador = AnalisadorLexical(arquivo_entrada)
         self.tabela = TabelaSimbolos()
-        self.gera = Gera()
+        self.gera = Gera(filename = arquivo_saida)
 
         self.keywords = {
             "sprograma": "programa",
@@ -78,8 +87,6 @@ class AnalisadorSintatico:
                     self.erro = True
                     return
 
-            if self.token_atual:
-                print(self.token_atual.lexema)
         else:
             print(f"Erro sintático: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado 'EOF'")
     
@@ -93,21 +100,36 @@ class AnalisadorSintatico:
     def _analisar_programa(self): 
         """Analisa a estrutura principal do programa."""     
         self._consumir("sprograma")
+        self.gera("", "START", "", "")
         if not self.erro:
-            self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='programa')
+
+            self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='programa', rotulo=Rotulo())
+            self.nome_programa = self.token_atual.lexema
             self._consumir("sidentificador")
             if not self.erro:
                 self._consumir("sponto_virgula")
                 if not self.erro:
                     self.analisar_bloco(final=True)
+                    self.gera("", "HLT", "", "")
         
     def analisar_bloco(self, final=False):
         """Analisa o bloco de declarações e comandos."""
+        vars_dalloc = None
         self._analisa_et_variaveis()
         if not self.erro:
+            if final:
+                self.gera("","JMP",self.tabela.buscar_simbolo(self.nome_programa)['rotulo'],"")
             self._analisa_subrotinas()
             if not self.erro:
+                if final:
+                    self.gera(self.tabela.buscar_simbolo(self.nome_programa)['rotulo'], "NULL", "", "")
                 self._analisa_comandos(final=final)
+                vars_dalloc = self.tabela.sair_escopo()
+
+                if len(vars_dalloc) >= 1:
+                    self.gera("", "DALLOC", self.qtd_var, len(vars_dalloc))
+                    self.qtd_var -= len(vars_dalloc)
+
 
     def _analisa_et_variaveis(self):
         """Analisa todas as seções de declaração de variáveis."""
@@ -120,6 +142,7 @@ class AnalisadorSintatico:
     def _analisa_variaveis(self):
         """Analisa uma linha de declaração como 'a, b, c : inteiro;'"""
         variaveis_para_declarar = []
+        end_inicial_var = self.qtd_var 
 
         if self.token_atual and self.token_atual.simbolo == "sidentificador" and not self.erro:
             variaveis_para_declarar.append(self.token_atual.lexema)
@@ -127,7 +150,6 @@ class AnalisadorSintatico:
 
         while self.token_atual and self.token_atual.simbolo == "svirgula" and not self.erro:
             self._consumir("svirgula")
-            
             variavel = self.token_atual.lexema
             self._consumir("sidentificador")
             if not self.erro:
@@ -155,8 +177,10 @@ class AnalisadorSintatico:
                 except ValueError as e:
                     print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                     self.erro = True
+                self.qtd_var += 1
 
         self._consumir("sponto_virgula")
+        self.gera("", "ALLOC", end_inicial_var, self.qtd_var - end_inicial_var)
 
     def _analisa_comandos(self, final=False):
         if self.token_atual and self.token_atual.simbolo == "sinicio":
@@ -231,57 +255,80 @@ class AnalisadorSintatico:
                 self._consumir("satribuicao")
                 self._analisa_atribuicao(simbolo)
             else:
+                self.gera("", "CALL", self.tabela.buscar_simbolo(simbolo)['rotulo'], "")
                 self._analisa_chamada_procedimento(simbolo)
 
     def _analisa_leia(self):
+        simbolo = None
         self._consumir("sleia")
         self._consumir("sabre_parenteses")
         if not self.erro:
             if not self.erro and self.token_atual.simbolo == "sidentificador":
                 try:
-                    self.tabela.buscar_simbolo(self.token_atual.lexema)
+                    simbolo = self.tabela.buscar_simbolo(self.token_atual.lexema)
                 except ValueError as e:
                     print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                     self.erro = True
+                self.gera("", "RD", "", "")
+                self.gera("", "STR", simbolo['memoria'], "")
                 if not self.erro:
                     self._consumir("sidentificador")
                     if not self.erro:
                         self._consumir("sfecha_parenteses")
 
     def _analisa_escreva(self):
+        simbolo = None
         self._consumir("sescreva")
         self._consumir("sabre_parenteses")
         if not self.erro:
             if not self.erro:
                 try:
-                    self.tabela.buscar_simbolo(self.token_atual.lexema)
+                    simbolo = self.tabela.buscar_simbolo(self.token_atual.lexema)
                 except ValueError as e:
                     print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                     self.erro = True
+                self.gera("", "LDV", simbolo['memoria'], "")
+                self.gera("", "PRN", "", "")
                 self._consumir("sidentificador")
                 if not self.erro:
                     self._consumir("sfecha_parenteses")
     
-    # AQUI DEVE TER CÓDIGO DE GERAÇÃO DE RÓTULO
     def _analisa_enquanto(self): 
+        rotulo_inicio = Rotulo()
+        rotulo_sair = Rotulo()
         self._consumir("senquanto")
-        self._expressao()
-        if not self.erro:
+        self.gera(rotulo_inicio, "NULL", "", "")
+        if not self.erro and self._expressao() == 'booleano':
+            self.gera("", "JMPF", rotulo_sair, "")
             self._consumir("sfaca")
             if not self.erro:
-                self._analisa_comando_simples()      
+                self._analisa_comando_simples() 
+                self.gera("", "JMP", rotulo_inicio, "")
+                self.gera(rotulo_sair, "NULL", "", "")
+        elif not self.erro:
+            print(f"Erro Semântico na linha {self.token_atual.linha}: Expressão do 'enquanto' deve ser do tipo booleano.")
+            self.erro = True     
 
     def _analisa_se(self):
+        rotulo_se = Rotulo()
+        rotulo_pula_senao = Rotulo()
         self._consumir("sse")
-        self._expressao()
-        if not self.erro:
+        if not self.erro and self._expressao() == 'booleano':
+            self.gera("", "JMPF", rotulo_se, "")
             self._consumir("sentao")
             if not self.erro:
                 self._analisa_comando_simples(sentao_ssenao=True)
                 if not self.erro and self.token_atual and self.token_atual.simbolo == "ssenao":
+                    self.gera("", "JMP", rotulo_pula_senao, "")
+                self.gera(rotulo_se, "NULL","", "")
+                if not self.erro and self.token_atual and self.token_atual.simbolo == "ssenao":
                     self._consumir("ssenao")
                     if not self.erro:
                         self._analisa_comando_simples(sentao_ssenao=True)
+                        self.gera(rotulo_pula_senao, "NULL","", "")
+        elif not self.erro:
+            print(f"Erro Semântico na linha {self.token_atual.linha}: Expressão do 'se' deve ser do tipo booleano.")
+            self.erro = True
 
     def _analisa_subrotinas(self):
         while self.token_atual and self.token_atual.simbolo in ["sprocedimento", "sfuncao"]:
@@ -295,10 +342,11 @@ class AnalisadorSintatico:
     def _analisa_declaracao_procedimento(self):
         if self.token_atual.simbolo == "sidentificador":
             try:
-                self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='procedimento')
+                self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='procedimento', rotulo=Rotulo())
             except ValueError as e:
                 print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 self.erro = True
+            self.gera(self.tabela.buscar_simbolo(self.token_atual.lexema)['rotulo'], "NULL", "", "")
             if not self.erro:
                 self._consumir("sidentificador")
                 if not self.erro:
@@ -306,7 +354,7 @@ class AnalisadorSintatico:
                     if not self.erro:
                         self.tabela.entrar_escopo()
                         self.analisar_bloco()
-                        self.tabela.sair_escopo()
+                        self.gera("", "RETURN", "", "")
 
     def _analisa_declaracao_funcao(self):
         nome_funcao = self.token_atual.lexema
@@ -335,14 +383,59 @@ class AnalisadorSintatico:
                     self.erro = True
                     
     def _expressao(self):
+        posfixa = None
+        tipo = None
         self._analisa_expressao()
         self.expressao.append(None)
         if not self.erro:
             posfixa = posfix(self.expressao)
-            print(f"Notação Pós-fixa: {posfixa}")
-            
-        print(self.expressao)
+            try:
+                tipo = tipo_expressao(posfixa, self.tabela)
+            except TypeError as e:
+                print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
+                self.erro = True
+        
+        for token in posfixa:
+            if token.isnumeric():
+                self.gera("", "LDC", token, "")
+            elif token in ["verdadeiro", "falso"]:
+                valor = 1 if token == "verdadeiro" else 0
+                self.gera("", "LDC", valor, "")
+            elif token.isalpha() and token not in ['e', 'ou', 'nao', 'div']:
+                self.gera("", "LDV", self.tabela.buscar_simbolo(token)['memoria'], "")
+            elif token == '+':
+                self.gera("", "ADD", "", "")
+            elif token == '-':
+                self.gera("", "SUB", "", "")
+            elif token == '*':
+                self.gera("", "MULT", "", "")
+            elif token == 'div':
+                self.gera("", "DIVI", "", "")
+            elif token == '<':
+                self.gera("", "CME", "", "")
+            elif token == '<=':
+                self.gera("", "CMEQ", "", "")
+            elif token == '>':
+                self.gera("", "CMA", "", "")
+            elif token == '>=':
+                self.gera("", "CMAQ", "", "")
+            elif token == '=':
+                self.gera("", "CEQ", "", "")
+            elif token == '!=':
+                self.gera("", "CDIF", "", "")
+            elif token == 'e':
+                self.gera("", "AND", "", "")
+            elif token == 'ou':
+                self.gera("", "OR", "", "")
+            elif token == 'nao':
+                self.gera("", "NEG", "", "")
+            elif token == '-u':
+                self.gera("", "INV", "", "")
+            elif token == '+u':
+                pass
+
         self.expressao = []
+        return tipo
 
     def _analisa_expressao(self):
         self._analisa_expressao_simples()
@@ -413,13 +506,18 @@ class AnalisadorSintatico:
             self.erro = True
 
     def _analisa_atribuicao(self, simbolo):
+        tipo = None
         try:
-            self.tabela.buscar_simbolo(simbolo)
+            tipo = self.tabela.buscar_simbolo(simbolo)['tipo']
         except ValueError as e:
             print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             self.erro = True
         if not self.erro:
-            self._expressao()
+            if self._expressao() != tipo:
+                print(f"Erro Semântico na linha {self.token_atual.linha}: Tipo incompatível na atribuição para '{simbolo}'. Esperado '{tipo}'.")
+                self.erro = True
+            else:
+                self.gera("", "STR", self.tabela.buscar_simbolo(simbolo)['memoria'], "")
             
     def _analisa_chamada_procedimento(self, simbolo):
         try:
@@ -442,6 +540,7 @@ if __name__ == "__main__":
     caminho_arquivo = sys.argv[1]
     
     nome_base, extensao = os.path.splitext(caminho_arquivo)
+    _, _, nome_arquivo = nome_base.rpartition(os.sep)
 
     if extensao != '.txt':
         print(f"Erro: O arquivo '{caminho_arquivo}' não é válido.")
@@ -449,7 +548,7 @@ if __name__ == "__main__":
         sys.exit(1)
     
     try:
-        analisador = AnalisadorSintatico(caminho_arquivo)
+        analisador = AnalisadorSintatico(caminho_arquivo, nome_arquivo)
         analisador.analisar()
     except Exception as e:
         print(f"Ocorreu um erro fatal durante a análise: {e}")
