@@ -1,66 +1,48 @@
-    START  
+START
     ALLOC 0 3
+    ALLOC 3 1
     JMP L1 
-L2  NULL  
-    ALLOC 3 2
-    ALLOC 5 1
-    LDV 4 
-    LDC 1 
-    CMA  
-    JMPF L3 
-    LDC 0 
+L2  NULL
+    ALLOC 4 3
+    ALLOC 7 1
+    JMP L3 
+L4  NULL
+    RD
     STR 4 
-L3  NULL  
-    RD  
+    RD
     STR 5 
-L5  NULL  
-    LDV 3 
-    LDC 89 
-    CDIF  
-    LDV 3 
-    LDC 1000 
-    CMEQ  
-    AND  
-    JMPF L6 
-    LDV 4 
-    LDV 4 
-    ADD  
-    STR 3 
-    JMP L5 
-L6  NULL  
-    LDV 3 
-    PRN  
-    DALLOC 6 3
-    RETURN  
-L7  NULL  
-    RD  
-    STR 0 
-    LDV 0 
-    LDV 0 
-    MULT  
-    LDV 2 
-    LDV 1 
-    DIVI  
-    ADD  
-    STR 1 
-    RETURN  
-L1  NULL  
     CALL L2 
-    CALL L7 
-    LDV 1 
+    LDV 3 
+    STR 6 
+    LDV 6 
+    PRN
+    RETURN
+    JMP L3 
+L5  NULL
+    ALLOC 8 1
+    RD
+    STR 8 
+    LDV 8 
+    LDC 10 
+    CME
+    JMPF L6 
+    CALL L4 
+L6  NULL
+    DALLOC 9 1
+    RETURN
+L3  NULL
+    CALL L5 
+    LDV 4 
+    LDV 5 
+    ADD
+    STR 3 
+    DALLOC 8 4
+    RETURN
+L1  NULL
+    CALL L2 
+    LDV 3 
+    STR 2 
     LDV 2 
-    LDV 0 
-    LDV 0 
-    MULT  
-    ADD  
-    CMA  
-    JMPF L8 
-    LDV 1 
-    PRN  
-    JMP L9 
-L8  NULL  
-    LDV 2 
-    PRN  
-L9  NULL  
-    DALLOC 3 3
-    HLT  
+    PRN
+    DALLOC 4 4
+    HLT
