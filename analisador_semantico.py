@@ -15,7 +15,7 @@ class TabelaSimbolos:
             'memoria': memoria,
             'rotulo': rotulo
         }
-        if self.escopos[-1][nome]['tipo'] in ['inteiro', 'booleano']:
+        if self.escopos[-1][nome]['tipo'] in ['inteiro', 'booleano', 'funcao inteiro', 'funcao booleano']:
             self.endereco_memoria += 1
 
     def buscar_simbolo(self, nome):
@@ -36,7 +36,7 @@ class TabelaSimbolos:
             self.nivel_atual -= 1
 
         for simbolo in dalloc:
-            if dalloc[simbolo]['tipo'] not in ['inteiro', 'booleano']:
+            if dalloc[simbolo]['tipo'] not in ['inteiro', 'booleano', 'funcao inteiro', 'funcao booleano']:
                 pop.append(simbolo)
         
         for simbolo in pop:
@@ -77,6 +77,8 @@ def tipo_expressao(posfixa, tabela):
                 try:
                     simbolo = tabela.buscar_simbolo(token) # Ex: buscar 'a'
                     tipo_token = simbolo['tipo']          # Ex: 'inteiro'
+                    if tipo_token in ['funcao inteiro', 'funcao booleano']:
+                        tipo_token = tipo_token.replace('funcao ', '')
                 except Exception as e:
                     raise ValueError(f"Erro ao buscar símbolo '{token}': {e}")
             
@@ -179,6 +181,5 @@ def posfix(expressao):
 
     if None in posfixa:
         posfixa.remove(None)
-    
     return posfixa
 

@@ -5,12 +5,16 @@ from analisador_semantico import TabelaSimbolos, posfix, tipo_expressao
 from code_generator import Gera
 
 class Rotulo:
-    contador = 1  # Começa em 1
+    contador = 1
 
     def __new__(cls):
         rotulo = f"L{cls.contador}"
         cls.contador += 1
         return rotulo
+
+    @classmethod
+    def go_back_i_want_to_be_monke(cls):
+        cls.contador = cls.contador - 1
 
 class AnalisadorSintatico:
     def __init__(self, arquivo_entrada, arquivo_saida):
@@ -82,7 +86,7 @@ class AnalisadorSintatico:
                 return
 
             if self.token_atual:
-                if simbolo_anterior == self.token_atual.simbolo and simbolo_anterior not in ["sinicio"]:
+                if simbolo_anterior == self.token_atual.simbolo and simbolo_anterior not in ["sinicio", "sfim", "sabre_parenteses", "sfecha_parenteses"]:
                     print(f"Erro Sintático na linha {self.token_atual.linha}: Símbolo '{self.token_atual.lexema}' duplicado.")
                     self.erro = True
                     return
@@ -109,21 +113,18 @@ class AnalisadorSintatico:
             if not self.erro:
                 self._consumir("sponto_virgula")
                 if not self.erro:
-                    self.analisar_bloco(final=True)
+                    rotulo_skip = self.tabela.buscar_simbolo(self.nome_programa)['rotulo']
+                    self.analisar_bloco(rotulo_skip, final=True)
                     self.gera("", "HLT", "", "")
         
-    def analisar_bloco(self, final=False):
+    def analisar_bloco(self, rotulo_skip, final=False):
         """Analisa o bloco de declarações e comandos."""
         vars_dalloc = None
         self._analisa_et_variaveis()
         if not self.erro:
-            if final:
-                self.gera("","JMP",self.tabela.buscar_simbolo(self.nome_programa)['rotulo'],"")
-            self._analisa_subrotinas()
+            func_proc = self._analisa_subrotinas(rotulo_skip)
             if not self.erro:
-                if final:
-                    self.gera(self.tabela.buscar_simbolo(self.nome_programa)['rotulo'], "NULL", "", "")
-                self._analisa_comandos(final=final)
+                self._analisa_comandos(rotulo_skip, func_proc=func_proc, final=final)
                 vars_dalloc = self.tabela.sair_escopo()
 
                 if len(vars_dalloc) >= 1:
@@ -182,8 +183,10 @@ class AnalisadorSintatico:
         self._consumir("sponto_virgula")
         self.gera("", "ALLOC", end_inicial_var, self.qtd_var - end_inicial_var)
 
-    def _analisa_comandos(self, final=False):
+    def _analisa_comandos(self, rotulo_skip, func_proc, final=False):
         if self.token_atual and self.token_atual.simbolo == "sinicio":
+            if rotulo_skip != None and func_proc >= 1:
+                self.gera(rotulo_skip, "NULL", "", "")
             self._consumir("sinicio")
             while self.token_atual and self.token_atual.simbolo != "sfim" and not self.erro:
                 self._analisa_comando_simples()
@@ -242,7 +245,7 @@ class AnalisadorSintatico:
                 self._consumir("sponto_virgula")
 
         elif self.token_atual.simbolo == "sinicio":
-            self._analisa_comandos()
+            self._analisa_comandos(None, func_proc=True)
         else:
             print(f"Erro Sintático na linha {self.token_atual.linha}: Comando inválido ou inesperado '{self.token_atual.lexema}'.")
             self.erro = True
@@ -330,19 +333,32 @@ class AnalisadorSintatico:
             print(f"Erro Semântico na linha {self.token_atual.linha}: Expressão do 'se' deve ser do tipo booleano.")
             self.erro = True
 
-    def _analisa_subrotinas(self):
+    def _analisa_subrotinas(self, rotulo_skip):
+        subrotinas = 0
         while self.token_atual and self.token_atual.simbolo in ["sprocedimento", "sfuncao"]:
             if self.token_atual.simbolo == "sprocedimento":
+                subrotinas += 1
                 self._consumir("sprocedimento")
-                self._analisa_declaracao_procedimento()
+                self._analisa_declaracao_procedimento(rotulo_skip)
             elif self.token_atual.simbolo == "sfuncao":
+                subrotinas += 1
                 self._consumir("sfuncao")
-                self._analisa_declaracao_funcao()
+                self._analisa_declaracao_funcao(rotulo_skip)
+        
+        if subrotinas == 0:
+            Rotulo.go_back_i_want_to_be_monke()
+        
+        return subrotinas
 
-    def _analisa_declaracao_procedimento(self):
+    def _analisa_declaracao_procedimento(self, skippar):
+        rotulo_procedimento = Rotulo()
+        rotulo_skip = Rotulo()
+        
+        self.gera("", "JMP", skippar, "")
+
         if self.token_atual.simbolo == "sidentificador":
             try:
-                self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='procedimento', rotulo=Rotulo())
+                self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='procedimento', rotulo=rotulo_procedimento)
             except ValueError as e:
                 print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 self.erro = True
@@ -353,12 +369,20 @@ class AnalisadorSintatico:
                     self._consumir("sponto_virgula")
                     if not self.erro:
                         self.tabela.entrar_escopo()
-                        self.analisar_bloco()
+                        self.analisar_bloco(rotulo_skip)
                         self.gera("", "RETURN", "", "")
 
-    def _analisa_declaracao_funcao(self):
+    def _analisa_declaracao_funcao(self, skippar):
+        rotulo_funcao = Rotulo()
+        rotulo_skip = Rotulo()
         nome_funcao = self.token_atual.lexema
         tipo_retorno = None
+
+        self.gera("", "ALLOC", self.qtd_var, 1)
+        self.qtd_var += 1
+        
+        self.gera("", "JMP", skippar, "")
+
         self._consumir("sidentificador")
         if not self.erro:
             self._consumir("sdoispontos")
@@ -368,16 +392,17 @@ class AnalisadorSintatico:
                     self._consumir(self.token_atual.simbolo)
                     if not self.erro:
                         try:
-                            self.tabela.adicionar_simbolo(nome_funcao, tipo=f'funcao {tipo_retorno}')
+                            self.tabela.adicionar_simbolo(nome_funcao, tipo=f'funcao {tipo_retorno}', rotulo=rotulo_funcao)
                         except ValueError as e:
                             print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                             self.erro = True
+                        self.gera(self.tabela.buscar_simbolo(nome_funcao)['rotulo'], "NULL", "", "")
                         if not self.erro:
                             self._consumir("sponto_virgula")
                             if not self.erro:
                                 self.tabela.entrar_escopo()
-                                self.analisar_bloco()
-                                self.tabela.sair_escopo()
+                                self.analisar_bloco(rotulo_skip)
+                                self.gera("", "RETURN", "", "")
                 else:
                     print(f"Erro sintático na linha {self.token_atual.linha}: Tipo de retorno esperado (inteiro ou booleano)")
                     self.erro = True
@@ -402,6 +427,8 @@ class AnalisadorSintatico:
                 valor = 1 if token == "verdadeiro" else 0
                 self.gera("", "LDC", valor, "")
             elif token.isalpha() and token not in ['e', 'ou', 'nao', 'div']:
+                if self.tabela.buscar_simbolo(token)['tipo'] in ['funcao inteiro', 'funcao booleano']:
+                    self.gera("", "CALL", self.tabela.buscar_simbolo(token)['rotulo'], "")
                 self.gera("", "LDV", self.tabela.buscar_simbolo(token)['memoria'], "")
             elif token == '+':
                 self.gera("", "ADD", "", "")
@@ -480,7 +507,7 @@ class AnalisadorSintatico:
                 self.expressao.append(self.token_atual.lexema)    
                 self._consumir("sidentificador")
                 if not self.erro and simbolo['tipo'] in ['funcao inteiro', 'funcao booleano']:
-                    self._analisa_chamada_funcao()
+                    self._analisa_chamada_funcao(simbolo['nome'])
 
         elif self.token_atual.simbolo == "snumero":
             self.expressao.append(self.token_atual.lexema)
@@ -512,6 +539,10 @@ class AnalisadorSintatico:
         except ValueError as e:
             print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             self.erro = True
+
+        if tipo in ['funcao inteiro', 'funcao booleano']:
+            tipo = tipo.replace('funcao ', '')
+
         if not self.erro:
             if self._expressao() != tipo:
                 print(f"Erro Semântico na linha {self.token_atual.linha}: Tipo incompatível na atribuição para '{simbolo}'. Esperado '{tipo}'.")
@@ -526,10 +557,12 @@ class AnalisadorSintatico:
             print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             self.erro = True
 
-    def _analisa_chamada_funcao(self):
-        self._consumir("sabre_parenteses")
-        if not self.erro:
-            self._consumir("sfecha_parenteses")
+    def _analisa_chamada_funcao(self, simbolo):
+        try:
+            self.tabela.buscar_simbolo(simbolo)
+        except ValueError as e:
+            print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
+            self.erro = True
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -547,8 +580,5 @@ if __name__ == "__main__":
         print("Por favor, forneça um arquivo .txt")
         sys.exit(1)
     
-    try:
-        analisador = AnalisadorSintatico(caminho_arquivo, nome_arquivo)
-        analisador.analisar()
-    except Exception as e:
-        print(f"Ocorreu um erro fatal durante a análise: {e}")
+    analisador = AnalisadorSintatico(caminho_arquivo, nome_arquivo)
+    analisador.analisar()
