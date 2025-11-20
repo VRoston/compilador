@@ -42,3 +42,11 @@ inicio
   processador;
   escreva(resultado);
 fim.
+
+{
+Entrada: 4
+Saida: 30
+
+Entrada: 6
+Saida: 81
+}

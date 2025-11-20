@@ -36,3 +36,17 @@ inicio
 
   escreva(resultado);
 fim.
+
+{
+Teste 1 (Delta Positivo):
+    Entradas: 1, 5, 4
+    Saída Esperada: 57
+
+Teste 2 (Delta Zero):
+    Entradas: 2, 4, 2
+    Saída Esperada: 9
+
+Teste 3 (Delta Negativo):
+    Entradas: 10, 1, 10
+    Saída Esperada: -1
+}
