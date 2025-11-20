@@ -85,10 +85,6 @@ class EditorTxt:
         messagebox.showinfo("Salvo", "Arquivo salvo com sucesso!")
 
     def executar_analisador(self):
-        if not self.file_path:
-            messagebox.showwarning("Aviso", "Salve o arquivo antes de executar.")
-            return
-        self.salvar_arquivo()
         try:
             resultado = subprocess.run(
                 ["python3", "analisador_sintatico.py", self.file_path],
@@ -102,13 +98,31 @@ class EditorTxt:
     def mostrar_saida(self, saida):
         self.output.config(state="normal")
         self.output.delete(1.0, tk.END)
-        linhas_erro = [line for line in saida.splitlines() if "linha" in line]
-        for idx, line in enumerate(linhas_erro, 1):
-            self.output.insert(tk.END, line + "\n")
-            start = f"{idx}.0"
-            end = f"{idx}.end"
-            self.output.tag_add("erro", start, end)
-        self.output.tag_configure("erro", foreground="red", underline=True)
+
+        # Se não houver saída, considerar execução sem erros
+        if not saida or not saida.strip():
+            self.output.insert(tk.END, "Execução concluída sem erros\n")
+            self.output.tag_configure("sucesso", foreground="green")
+            self.output.tag_add("sucesso", "1.0", "1.end")
+            messagebox.showinfo("Sucesso", "Execução concluída sem erros")
+            self.output.config(state="disabled")
+            return
+
+        # Procura linhas de erro contendo a palavra 'linha' (case-insensitive)
+        linhas_erro = [line for line in saida.splitlines() if "linha" in line.lower()]
+        if linhas_erro:
+            for idx, line in enumerate(linhas_erro, 1):
+                self.output.insert(tk.END, line + "\n")
+                start = f"{idx}.0"
+                end = f"{idx}.end"
+                self.output.tag_add("erro", start, end)
+            self.output.tag_configure("erro", foreground="red", underline=True)
+            messagebox.showwarning("Erros", "Foram encontrados erros na execução. Veja a saída.")
+        else:
+            # Há saída, mas sem marcação de linhas de erro
+            self.output.insert(tk.END, saida)
+            messagebox.showinfo("Aviso", "Execução finalizada com saída (sem marcação de linhas de erro).")
+
         self.output.config(state="disabled")
         self.output.bind("<Button-1>", self.on_output_click)
 

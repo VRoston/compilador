@@ -1,6 +1,5 @@
     START  
     ALLOC 0 3
-    ALLOC 3 1
     JMP L1 
 L2  NULL  
     ALLOC 4 3
@@ -17,7 +16,6 @@ L4  NULL
     LDV 6 
     PRN  
     RETURN  
-    JMP L3 
 L5  NULL  
     ALLOC 8 1
     RD  
@@ -40,6 +38,7 @@ L3  NULL
     DALLOC 4 3
     RETURN  
 L1  NULL  
+    ALLOC 3 1
     CALL L2 
     LDV 3 
     STR 2 

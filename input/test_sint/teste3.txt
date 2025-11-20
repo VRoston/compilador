@@ -1,0 +1,38 @@
+programa teste_matematico;
+var a, b, c, delta, resultado: inteiro; {Endereços 0, 1, 2, 3, 4}
+
+  { Procedimento para calcular o Delta }
+  procedimento calc_delta;
+  var t1, t2: inteiro; {Endereços 5 e 6 - Protegidos}
+  inicio
+     t1 := b * b;
+     t2 := 4 * a * c;
+     delta := t1 - t2;
+  fim;
+
+  { Função com a expressão complexa }
+  funcao complexo: inteiro;
+  var soma_ab: inteiro; {Endereço 7 - Protegido}
+  { Endereço 8: Usado para RETORNO (Não protegido pelo ALLOC da função) }
+  inicio
+     soma_ab := a + b;
+     
+     { Expressão: (soma_ab * delta) - (c / 2) + (a * 5) }
+     { Testa precedencia: * e / devem ocorrer antes de + e - }
+     complexo := (soma_ab * delta) - (c div 2) + (a * 5);
+  fim;
+
+inicio
+  leia(a); 
+  leia(b); 
+  leia(c);
+
+  calc_delta;
+
+  { Se delta negativo, retorna -1 (erro), senão calcula }
+  se delta < 0
+  entao resultado := -1
+  senao resultado := complexo;
+
+  escreva(resultado);
+fim.
