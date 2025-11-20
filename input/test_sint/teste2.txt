@@ -1,0 +1,44 @@
+programa teste_complexo;
+var n, resultado: inteiro; {Endereços 0 e 1}
+
+  procedimento processador;
+  var temp, x: inteiro; {Endereço 2}
+
+    procedimento trata_erro;
+    inicio
+      x:=-1;
+      escreva(x); {Erro}
+    fim;
+
+    funcao calculadora: inteiro;
+    var i, acc: inteiro; {Endereços 3 e 4}
+    {Endereço 5: Reservado para o RETORNO da função (não protegido)}
+    inicio
+      i := 1;
+      acc := 0;
+      enquanto i <= n faca
+      inicio
+         acc := acc + (i * i);
+         i := i + 1;
+      fim;
+      
+      { Lógica extra: se passar de 50, aplica uma "taxa" de -10 }
+      se acc > 50
+      entao calculadora := acc - 10
+      senao calculadora := acc;
+    fim;
+
+  inicio { processador }
+     se n < 0
+     entao trata_erro
+     senao inicio
+        temp := calculadora;
+        resultado := temp;
+     fim;
+  fim;
+
+inicio
+  leia(n);
+  processador;
+  escreva(resultado);
+fim.
