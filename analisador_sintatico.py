@@ -24,6 +24,9 @@ class AnalisadorSintatico:
         self.qtd_var = 0
         self.nome_programa = ""
 
+        self.escopos_dalloc = [[]]
+        self.escopo_atual = 0
+
         self.lexador = AnalisadorLexical(arquivo_entrada)
         self.tabela = TabelaSimbolos()
         self.gera = Gera(filename = arquivo_saida)
@@ -125,12 +128,18 @@ class AnalisadorSintatico:
             func_proc = self._analisa_subrotinas(rotulo_skip)
             if not self.erro:
                 self._analisa_comandos(rotulo_skip, func_proc=func_proc, final=final)
-                vars_dalloc = self.tabela.sair_escopo()
+                self.tabela.sair_escopo()
 
-                if len(vars_dalloc) >= 1:
-                    self.gera("", "DALLOC", self.qtd_var, len(vars_dalloc))
-                    self.qtd_var -= len(vars_dalloc)
+                self._gera_dalloc()
 
+    def _gera_dalloc(self):
+        """Gera as instruções de DALLOC para o escopo atual."""
+        if self.escopos_dalloc and len(self.escopos_dalloc) > self.escopo_atual:
+            for var_range in reversed(self.escopos_dalloc[self.escopo_atual]):
+                inicio, tamanho = var_range
+                self.gera("", "DALLOC", inicio, tamanho)
+            self.escopos_dalloc.pop()
+            self.escopo_atual -= 1
 
     def _analisa_et_variaveis(self):
         """Analisa todas as seções de declaração de variáveis."""
@@ -182,6 +191,7 @@ class AnalisadorSintatico:
 
         self._consumir("sponto_virgula")
         self.gera("", "ALLOC", end_inicial_var, self.qtd_var - end_inicial_var)
+        self.escopos_dalloc[-1].append((end_inicial_var, self.qtd_var - end_inicial_var))
 
     def _analisa_comandos(self, rotulo_skip, func_proc, final=False):
         if self.token_atual and self.token_atual.simbolo == "sinicio":
@@ -368,6 +378,8 @@ class AnalisadorSintatico:
                 if not self.erro:
                     self._consumir("sponto_virgula")
                     if not self.erro:
+                        self.escopo_atual += 1
+                        self.escopos_dalloc.append([])
                         self.tabela.entrar_escopo()
                         self.analisar_bloco(rotulo_skip)
                         self.gera("", "RETURN", "", "")
@@ -379,6 +391,7 @@ class AnalisadorSintatico:
         tipo_retorno = None
 
         self.gera("", "ALLOC", self.qtd_var, 1)
+        self.escopos_dalloc[-1].append((self.qtd_var, 1))
         self.qtd_var += 1
         
         self.gera("", "JMP", skippar, "")
@@ -400,6 +413,8 @@ class AnalisadorSintatico:
                         if not self.erro:
                             self._consumir("sponto_virgula")
                             if not self.erro:
+                                self.escopo_atual += 1
+                                self.escopos_dalloc.append([])
                                 self.tabela.entrar_escopo()
                                 self.analisar_bloco(rotulo_skip)
                                 self.gera("", "RETURN", "", "")
