@@ -27,6 +27,8 @@ class AnalisadorSintatico:
         self.escopos_dalloc = [[]]
         self.escopo_atual = 0
 
+        self.allocs_pendentes = [[]]
+
         self.lexador = AnalisadorLexical(arquivo_entrada)
         self.tabela = TabelaSimbolos()
         self.gera = Gera(filename = arquivo_saida)
@@ -121,7 +123,7 @@ class AnalisadorSintatico:
                     self.gera("", "HLT", "", "")
         
     def analisar_bloco(self, rotulo_skip, final=False):
-        """Analisa o bloco de declarações e comandos."""
+        self.allocs_pendentes.append([])
         vars_dalloc = None
         self._analisa_et_variaveis()
         if not self.erro:
@@ -131,6 +133,7 @@ class AnalisadorSintatico:
                 self.tabela.sair_escopo()
 
                 self._gera_dalloc()
+        self.allocs_pendentes.pop()
 
     def _gera_dalloc(self):
         """Gera as instruções de DALLOC para o escopo atual."""
@@ -195,8 +198,20 @@ class AnalisadorSintatico:
 
     def _analisa_comandos(self, rotulo_skip, func_proc, final=False):
         if self.token_atual and self.token_atual.simbolo == "sinicio":
-            if rotulo_skip != None and func_proc >= 1:
-                self.gera(rotulo_skip, "NULL", "", "")
+            if rotulo_skip != None:
+                # Se houve sub-rotinas (func_proc >= 1), o JMP lá em cima pulou pra cá.
+                # Se não houve, o fluxo seguiu normal e esse rótulo é apenas um marcador.
+                if func_proc >= 1:
+                    self.gera(rotulo_skip, "NULL", "", "")
+                
+                # NOVO: Agora que estamos no fluxo de execução do bloco (após pular definições),
+                # geramos os ALLOCs das variáveis de retorno das funções declaradas acima.
+                for alloc in self.allocs_pendentes[-1]:
+                    self.gera("", "ALLOC", alloc[0], alloc[1])
+                
+                # Limpa para não gerar novamente
+                self.allocs_pendentes[-1] = []
+
             self._consumir("sinicio")
             while self.token_atual and self.token_atual.simbolo != "sfim" and not self.erro:
                 self._analisa_comando_simples()
@@ -345,26 +360,35 @@ class AnalisadorSintatico:
 
     def _analisa_subrotinas(self, rotulo_skip):
         subrotinas = 0
+        flag_jump_gerado = False # Controle para gerar o JMP apenas uma vez
+
+        # Verifica se o próximo token inicia uma sub-rotina para gerar o pulo
+        if self.token_atual and self.token_atual.simbolo in ["sprocedimento", "sfuncao"]:
+            self.gera("", "JMP", rotulo_skip, "")
+            flag_jump_gerado = True
+
         while self.token_atual and self.token_atual.simbolo in ["sprocedimento", "sfuncao"]:
             if self.token_atual.simbolo == "sprocedimento":
                 subrotinas += 1
                 self._consumir("sprocedimento")
-                self._analisa_declaracao_procedimento(rotulo_skip)
+                # Não passamos mais rotulo_skip para dentro, pois o pulo já foi feito
+                self._analisa_declaracao_procedimento() 
             elif self.token_atual.simbolo == "sfuncao":
                 subrotinas += 1
                 self._consumir("sfuncao")
-                self._analisa_declaracao_funcao(rotulo_skip)
+                self._analisa_declaracao_funcao()
         
+        # Se não houve sub-rotinas, o contador de rótulos pode ser ajustado (seu código original)
         if subrotinas == 0:
             Rotulo.go_back_i_want_to_be_monke()
         
         return subrotinas
 
-    def _analisa_declaracao_procedimento(self, skippar):
+    def _analisa_declaracao_procedimento(self):
         rotulo_procedimento = Rotulo()
-        rotulo_skip = Rotulo()
+        rotulo_skip = Rotulo() # Rótulo para o bloco interno deste procedimento
         
-        self.gera("", "JMP", skippar, "")
+        # REMOVIDO: self.gera("", "JMP", skippar, "") <--- O pai já pulou tudo
 
         if self.token_atual.simbolo == "sidentificador":
             try:
@@ -372,7 +396,10 @@ class AnalisadorSintatico:
             except ValueError as e:
                 print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 self.erro = True
+            
+            # Gera o rótulo de entrada do procedimento
             self.gera(self.tabela.buscar_simbolo(self.token_atual.lexema)['rotulo'], "NULL", "", "")
+            
             if not self.erro:
                 self._consumir("sidentificador")
                 if not self.erro:
@@ -381,20 +408,24 @@ class AnalisadorSintatico:
                         self.escopo_atual += 1
                         self.escopos_dalloc.append([])
                         self.tabela.entrar_escopo()
-                        self.analisar_bloco(rotulo_skip)
+                        self.analisar_bloco(rotulo_skip) # Recursão normal
                         self.gera("", "RETURN", "", "")
 
-    def _analisa_declaracao_funcao(self, skippar):
+    def _analisa_declaracao_funcao(self):
         rotulo_funcao = Rotulo()
         rotulo_skip = Rotulo()
         nome_funcao = self.token_atual.lexema
         tipo_retorno = None
 
-        self.gera("", "ALLOC", self.qtd_var, 1)
+        # ALTERAÇÃO: Não geramos ALLOC agora. Apenas registramos que ele é necessário.
+        # O ALLOC será gerado quando o 'inicio' do pai for processado.
+        self.allocs_pendentes[-1].append((self.qtd_var, 1))
+        
+        # Mantemos o registro no DALLOC para desalocar no final do pai
         self.escopos_dalloc[-1].append((self.qtd_var, 1))
         self.qtd_var += 1
         
-        self.gera("", "JMP", skippar, "")
+        # REMOVIDO: self.gera("", "JMP", skippar, "")
 
         self._consumir("sidentificador")
         if not self.erro:
@@ -407,9 +438,11 @@ class AnalisadorSintatico:
                         try:
                             self.tabela.adicionar_simbolo(nome_funcao, tipo=f'funcao {tipo_retorno}', rotulo=rotulo_funcao)
                         except ValueError as e:
-                            print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
+                            print(f"Erro Semântico: {e}")
                             self.erro = True
+                        
                         self.gera(self.tabela.buscar_simbolo(nome_funcao)['rotulo'], "NULL", "", "")
+                        
                         if not self.erro:
                             self._consumir("sponto_virgula")
                             if not self.erro:
