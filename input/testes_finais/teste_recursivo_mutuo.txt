@@ -1,0 +1,37 @@
+{ Teste de recursão mútua }
+
+programa parimpar;
+
+var n: inteiro;
+
+funcao eh_par: booleano;
+inicio
+    se n = 0 entao
+        eh_par := verdadeiro
+    senao
+        n := n - 1;
+        eh_par := eh_impar
+    fim
+fim;
+
+funcao eh_impar: booleano;
+inicio
+    se n = 0 entao
+        eh_impar := falso
+    senao
+        n := n - 1;
+        eh_impar := eh_par
+    fim
+fim;
+
+inicio
+    n := 7;
+    se eh_par entao
+        escreva(1)
+    senao
+        escreva(0)
+fim.
+
+{ Saída esperada:
+    0  (pois 7 é ímpar)
+}

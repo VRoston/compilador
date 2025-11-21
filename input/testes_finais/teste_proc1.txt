@@ -1,0 +1,35 @@
+{ Entrada:
+  programa simples com dois procedimentos e variáveis globais }
+
+programa teste_proc1;
+
+var a,b,c: inteiro;
+
+procedimento soma;
+var x,y: inteiro;
+inicio
+    x := a + b;
+    y := x + c;
+    escreva(y)
+fim;
+
+procedimento incA;
+var t: inteiro;
+inicio
+    t := a + 1;
+    a := t
+fim;
+
+inicio
+    a := 2;
+    b := 3;
+    c := 4;
+    soma;
+    incA;
+    escreva(a)
+fim.
+
+{ Saída esperada:
+    Linha 1: soma = 2 + 3 + 4 = 9
+    Linha 2: após incA, a = 2 + 1 = 3
+}

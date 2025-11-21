@@ -1,0 +1,27 @@
+{ Teste de recursividade direta: fatorial }
+
+programa fat;
+
+var n, r: inteiro;
+
+funcao fatorial: inteiro;
+var x: inteiro;
+inicio
+    x := n;                { usa variável global n como parâmetro }
+    se x = 0 entao
+        fatorial := 1
+    senao
+        n := x - 1;
+        fatorial := x * fatorial
+    fim
+fim;
+
+inicio
+    n := 5;
+    r := fatorial;
+    escreva(r)
+fim.
+
+{ Saída esperada:
+    120
+}

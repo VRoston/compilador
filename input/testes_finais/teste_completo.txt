@@ -1,0 +1,41 @@
+programa teste_completo;
+
+var a,b,c: inteiro;
+
+funcao dobro: inteiro;
+var a: inteiro;
+inicio
+    a := b * 2;
+    dobro := a
+fim;
+
+procedimento imprimeTudo;
+var b: inteiro;
+inicio
+    b := dobro;
+    escreva(b);
+    escreva(c)
+fim;
+
+funcao somaComplexa: inteiro;
+inicio
+    somaComplexa := 
+        (a*a + b*b + c*c) div ( (a+1) * (b+1) ) 
+fim;
+
+inicio
+    a := 3;
+    b := 4;
+    c := 5;
+
+    escreva(dobro);          { 8 }
+    imprimeTudo;             { 8, 5 }
+    escreva(somaComplexa)    { (9 + 16 + 25) div (4 * 5) = 50 div 20 = 2 }
+fim.
+
+{ Saída esperada:
+    8
+    8
+    5
+    2
+}

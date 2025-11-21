@@ -1,0 +1,24 @@
+programa loops;
+
+var x,y,z: inteiro;
+
+inicio
+    x := 0;
+    y := 5;
+    z := 1;
+
+    enquanto (x < y) e (z = 1) faca inicio
+        x := x + 1;
+        se x = 3 entao
+            z := 0
+        fim
+    fim;
+
+    escreva(x);
+    escreva(z)
+fim.
+
+{ Saída esperada:
+    3
+    0
+}

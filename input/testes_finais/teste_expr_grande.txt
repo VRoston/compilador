@@ -1,0 +1,27 @@
+programa exprzao;
+
+var a,b,c,d,e,f,g,h,i: inteiro;
+
+inicio
+    a := 2;
+    b := 3;
+    c := 4;
+    d := 5;
+    e := 6;
+    f := 7;
+    g := 8;
+    h := 9;
+    i := 10;
+
+    { expressão monstruosa }
+    a :=
+        (((a+b) * (c-d) + (e*f) div (g+h)) * ((i - a) + (b*b*b*b)))
+        div
+        ( (c + d + e + f + g) * (h - 3) );
+
+    escreva(a)
+fim.
+
+{ Não importa a exata saída — intenção:
+    testar pós-fixa, precedência, empilhamento
+}

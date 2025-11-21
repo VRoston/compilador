@@ -1,0 +1,34 @@
+{ Testa variáveis com mesmo nome em escopos diferentes }
+
+programa escopos;
+
+var x: inteiro;
+
+procedimento A;
+var x: inteiro;
+inicio
+    x := 10;
+
+    procedimento B;
+    var x: inteiro;
+    inicio
+        x := 20;
+        escreva(x);   { imprime 20 }
+    fim;
+
+    B;
+
+    escreva(x);       { imprime 10 }
+fim;
+
+inicio
+    x := 1;
+    A;
+    escreva(x)        { imprime 1 }
+fim.
+
+{ Saída esperada:
+    20
+    10
+    1
+}
