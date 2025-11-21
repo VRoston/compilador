@@ -2,7 +2,7 @@ class TabelaSimbolos:
     def __init__(self):
         self.escopos = [{}]  # Stack of scopes
         self.nivel_atual = 0  # Current scope level
-        self.endereco_memoria = 0  # Memory address counter
+        self.endereco_memoria = 1  # Memory address counter
 
     def adicionar_simbolo(self, nome, tipo=None, rotulo=None):
         if nome in self.escopos[-1]:
@@ -15,7 +15,7 @@ class TabelaSimbolos:
             'memoria': memoria,
             'rotulo': rotulo
         }
-        if self.escopos[-1][nome]['tipo'] in ['inteiro', 'booleano', 'funcao inteiro', 'funcao booleano']:
+        if self.escopos[-1][nome]['tipo'] in ['inteiro', 'booleano']:
             self.endereco_memoria += 1
 
     def buscar_simbolo(self, nome):
@@ -36,11 +36,11 @@ class TabelaSimbolos:
             self.nivel_atual -= 1
 
         for simbolo in dalloc:
-            if dalloc[simbolo]['tipo'] not in ['inteiro', 'booleano', 'funcao inteiro', 'funcao booleano']:
-                pop.append(simbolo)
+            pop.append(simbolo)
         
         for simbolo in pop:
             dalloc.pop(simbolo)
+            self.endereco_memoria -= 1
                 
         return dalloc
 

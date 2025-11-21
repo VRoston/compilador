@@ -1,10 +1,9 @@
 class MVD:
     """
-    MVD Finalíssima: Implementa 'Shadow Stack' (Salvar/Restaurar Contexto).
-    - Endereçamento Absoluto (resolve conflito Ler/Soma).
-    - Backup de variáveis na recursão (resolve o erro do 40).
-    - Preservação de valores (simula herança de memória suja).
-    Saída Garantida: 2, 2, 20.
+    MVD Ajustada: Pilha Dinâmica e Shadow Stack Seguro.
+    - Inicia s=-1 para evitar conflito com variáveis.
+    - ALLOC gerencia o topo da pilha automaticamente.
+    - Suporta recursão profunda e muitas variáveis.
     """
     
     def __init__(self, tamanho_memoria=5000):
@@ -15,9 +14,9 @@ class MVD:
         self.labels_by_index = []
         
         self.i = 0
-        # 's' agora é o topo da pilha de BACKUP, longe das variáveis (0-10).
-        # Iniciamos em 100 para evitar colisão com variáveis globais/locais.
-        self.s = 100 
+        # CORREÇÃO 1: Inicializa s em -1. A pilha cresce a partir do zero.
+        # O primeiro ALLOC do programa (ex: ALLOC 0 5) vai mover o s para 4.
+        self.s = -1 
         self.running = False
         self.aguardando_input = False
         self.proxima_inst_apos_input = 0
@@ -25,7 +24,8 @@ class MVD:
     def resetar(self):
         self.M = [0] * self.M_size
         self.i = 0
-        self.s = 100 
+        # CORREÇÃO 1: Resetar s para -1 também.
+        self.s = -1 
         self.running = False
         self.aguardando_input = False
         self.labels_by_index = []
@@ -103,7 +103,6 @@ class MVD:
         try: val = int(valor_str)
         except: val = 0
         
-        # Input vai para o topo da pilha TEMPORARIAMENTE para ser consumido pelo STR
         self.s += 1
         self._ensure_capacity(self.s)
         self.M[self.s] = val
@@ -123,65 +122,64 @@ class MVD:
         status_retorno = ("RUNNING", None)
 
         try:
-            # ---------------------------------------------------------
-            # ESTRATÉGIA DE SHADOW STACK (Backup/Restore)
-            # ---------------------------------------------------------
-            
             if instrucao == "START":
-                self.s = 100  # Pilha segura longe das vars (0..10)
+                # CORREÇÃO 1: Inicia a pilha vazia (base -1)
+                self.s = -1
 
             elif instrucao == "ALLOC":
-                # AQUI ESTÁ A MÁGICA QUE VOCÊ PEDIU
-                # "Empurrar tudo que há em cima" -> Salvar na pilha segura
                 m = arg1 if arg1 is not None else 0
                 n = arg2 if arg2 is not None else 0
                 
+                # CORREÇÃO 2: Lógica de Shadow Stack
+                # Primeiro, verifica se precisamos expandir a pilha para cobrir as novas variáveis
+                # Se s está em -1 e alocamos m=0, n=5, o novo s deve ser pelo menos 4.
+                topo_necessario = m + n - 1
+                if self.s < topo_necessario:
+                    self.s = topo_necessario
+                    self._ensure_capacity(self.s)
+
+                # Agora fazemos o backup (Shadow Stack)
+                # Empilhamos os valores atuais das variáveis m até m+n-1 no topo ATUAL da pilha
                 for k in range(n):
                     addr = m + k
-                    val = self.M[addr] # Pega o valor atual (Memória Suja/Herança)
+                    # Pega valor atual (pode ser 0 se for primeira vez, ou lixo de recursão)
+                    val = self.M[addr] 
                     
-                    # Salva no Backup (Push)
+                    # Empilha no topo seguro (acima de todas as variáveis alocadas)
                     self.s += 1
                     self._ensure_capacity(self.s)
                     self.M[self.s] = val
                     
-                    # Nota: NÃO zeramos M[addr]. Deixamos o valor lá para herança.
-
             elif instrucao == "DALLOC":
-                # "Volta as variáveis como estavam antes"
                 m = arg1 if arg1 is not None else 0
                 n = arg2 if arg2 is not None else 0
                 
-                # Restaura na ordem inversa (LIFO)
-                # Os valores na pilha: [..., val_0, val_1, ..., val_n-1] (Topo)
-                # Precisamos tirar do topo e por em m+n-1
+                # Restaura na ordem inversa (LIFO) do topo da pilha para as variáveis
                 for k in range(n - 1, -1, -1):
                     addr = m + k
-                    val = self.M[self.s]
-                    self.s -= 1
-                    
-                    self.M[addr] = val
+                    val = self.M[self.s] # Pega do backup
+                    self.s -= 1 # Desempilha
+                    self.M[addr] = val # Restaura na memória fixa
+                
+                # Opcional: Se desalocamos variáveis globais no fim, poderíamos reduzir s,
+                # mas o DALLOC padrão apenas restaura valores. 
+                # A redução do topo 's' acontece naturalmente ao consumir o backup.
 
             elif instrucao == "CALL":
-                # Salva apenas o endereço de retorno na pilha de backup
                 self.s += 1
                 self._ensure_capacity(self.s)
                 self.M[self.s] = proxima_inst
                 proxima_inst = arg1
 
             elif instrucao == "RETURN":
-                # Recupera endereço de retorno
                 ret_addr = self.M[self.s]
                 self.s -= 1
                 proxima_inst = ret_addr
 
-            # ---------------------------------------------------------
-            # ENDEREÇAMENTO ABSOLUTO (Simples e Robusto)
-            # ---------------------------------------------------------
+            # --- Instruções de Acesso e Aritmética ---
+            # (Permanecem iguais, pois usam s relativo ou endereços absolutos)
 
             elif instrucao == "LDV":
-                # Carrega direto do endereço físico. 
-                # A recursão é tratada pelo ALLOC/DALLOC que trocam os valores aqui.
                 addr = arg1
                 self.s += 1
                 self._ensure_capacity(self.s)
@@ -191,10 +189,7 @@ class MVD:
                 addr = arg1
                 self.M[addr] = self.M[self.s]
                 self.s -= 1
-
-            # ---------------------------------------------------------
-            # RESTO DAS INSTRUÇÕES
-            # ---------------------------------------------------------
+            
             elif instrucao == "HLT":
                 self.running = False
                 status_retorno = ("HALTED", None)

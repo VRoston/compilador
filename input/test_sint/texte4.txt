@@ -1,0 +1,20 @@
+programa teste;
+var x, y : inteiro;
+    flag : booleano;
+procedimento escreva_y;
+inicio
+    escreva(y);
+fim;
+funcao calc : inteiro;
+inicio
+    calc := x * y + 2;
+fim;
+inicio
+    leia(x);
+    leia(y);
+    y := calc;
+    se y > 100 entao
+        escreva_y
+    senao
+        escreva(x);
+fim.

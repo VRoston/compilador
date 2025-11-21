@@ -21,13 +21,11 @@ class AnalisadorSintatico:
         self.token_atual = None
         self.erro = False
         self.expressao = []
-        self.qtd_var = 0
+        self.qtd_var = 1
         self.nome_programa = ""
 
         self.escopos_dalloc = [[]]
         self.escopo_atual = 0
-
-        self.allocs_pendentes = [[]]
 
         self.lexador = AnalisadorLexical(arquivo_entrada)
         self.tabela = TabelaSimbolos()
@@ -110,6 +108,7 @@ class AnalisadorSintatico:
         """Analisa a estrutura principal do programa."""     
         self._consumir("sprograma")
         self.gera("", "START", "", "")
+        self.gera("", "ALLOC", 0, 1)
         if not self.erro:
 
             self.tabela.adicionar_simbolo(self.token_atual.lexema, tipo='programa', rotulo=Rotulo())
@@ -120,10 +119,10 @@ class AnalisadorSintatico:
                 if not self.erro:
                     rotulo_skip = self.tabela.buscar_simbolo(self.nome_programa)['rotulo']
                     self.analisar_bloco(rotulo_skip, final=True)
+                    self.gera("", "DALLOC", 0, 1)
                     self.gera("", "HLT", "", "")
         
     def analisar_bloco(self, rotulo_skip, final=False):
-        self.allocs_pendentes.append([])
         vars_dalloc = None
         self._analisa_et_variaveis()
         if not self.erro:
@@ -133,7 +132,6 @@ class AnalisadorSintatico:
                 self.tabela.sair_escopo()
 
                 self._gera_dalloc()
-        self.allocs_pendentes.pop()
 
     def _gera_dalloc(self):
         """Gera as instruções de DALLOC para o escopo atual."""
@@ -155,7 +153,8 @@ class AnalisadorSintatico:
     def _analisa_variaveis(self):
         """Analisa uma linha de declaração como 'a, b, c : inteiro;'"""
         variaveis_para_declarar = []
-        end_inicial_var = self.qtd_var 
+        end_inicial_var= self.tabela.endereco_memoria
+        # end_inicial_var = self.qtd_var 
 
         if self.token_atual and self.token_atual.simbolo == "sidentificador" and not self.erro:
             variaveis_para_declarar.append(self.token_atual.lexema)
@@ -193,8 +192,8 @@ class AnalisadorSintatico:
                 self.qtd_var += 1
 
         self._consumir("sponto_virgula")
-        self.gera("", "ALLOC", end_inicial_var, self.qtd_var - end_inicial_var)
-        self.escopos_dalloc[-1].append((end_inicial_var, self.qtd_var - end_inicial_var))
+        self.gera("", "ALLOC", end_inicial_var, self.tabela.endereco_memoria - end_inicial_var)
+        self.escopos_dalloc[-1].append((end_inicial_var, self.tabela.endereco_memoria - end_inicial_var))
 
     def _analisa_comandos(self, rotulo_skip, func_proc, final=False):
         if self.token_atual and self.token_atual.simbolo == "sinicio":
@@ -204,14 +203,6 @@ class AnalisadorSintatico:
                 if func_proc >= 1:
                     self.gera(rotulo_skip, "NULL", "", "")
                 
-                # NOVO: Agora que estamos no fluxo de execução do bloco (após pular definições),
-                # geramos os ALLOCs das variáveis de retorno das funções declaradas acima.
-                for alloc in self.allocs_pendentes[-1]:
-                    self.gera("", "ALLOC", alloc[0], alloc[1])
-                
-                # Limpa para não gerar novamente
-                self.allocs_pendentes[-1] = []
-
             self._consumir("sinicio")
             while self.token_atual and self.token_atual.simbolo != "sfim" and not self.erro:
                 self._analisa_comando_simples()
@@ -417,16 +408,6 @@ class AnalisadorSintatico:
         nome_funcao = self.token_atual.lexema
         tipo_retorno = None
 
-        # ALTERAÇÃO: Não geramos ALLOC agora. Apenas registramos que ele é necessário.
-        # O ALLOC será gerado quando o 'inicio' do pai for processado.
-        self.allocs_pendentes[-1].append((self.qtd_var, 1))
-        
-        # Mantemos o registro no DALLOC para desalocar no final do pai
-        self.escopos_dalloc[-1].append((self.qtd_var, 1))
-        self.qtd_var += 1
-        
-        # REMOVIDO: self.gera("", "JMP", skippar, "")
-
         self._consumir("sidentificador")
         if not self.erro:
             self._consumir("sdoispontos")
@@ -467,17 +448,18 @@ class AnalisadorSintatico:
             except TypeError as e:
                 print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 self.erro = True
-        
         for token in posfixa:
             if token.isnumeric():
                 self.gera("", "LDC", token, "")
             elif token in ["verdadeiro", "falso"]:
                 valor = 1 if token == "verdadeiro" else 0
                 self.gera("", "LDC", valor, "")
-            elif token.isalpha() and token not in ['e', 'ou', 'nao', 'div']:
+            elif token[0].isalpha() and token not in ['e', 'ou', 'nao', 'div']:
                 if self.tabela.buscar_simbolo(token)['tipo'] in ['funcao inteiro', 'funcao booleano']:
                     self.gera("", "CALL", self.tabela.buscar_simbolo(token)['rotulo'], "")
-                self.gera("", "LDV", self.tabela.buscar_simbolo(token)['memoria'], "")
+                    self.gera("", "LDV", "0", "")
+                else:
+                    self.gera("", "LDV", self.tabela.buscar_simbolo(token)['memoria'], "")
             elif token == '+':
                 self.gera("", "ADD", "", "")
             elif token == '-':
@@ -596,7 +578,10 @@ class AnalisadorSintatico:
                 print(f"Erro Semântico na linha {self.token_atual.linha}: Tipo incompatível na atribuição para '{simbolo}'. Esperado '{tipo}'.")
                 self.erro = True
             else:
-                self.gera("", "STR", self.tabela.buscar_simbolo(simbolo)['memoria'], "")
+                if self.tabela.buscar_simbolo(simbolo)['tipo'] in ['funcao inteiro', 'funcao booleano']:
+                    self.gera("", "STR", "0", "")
+                else:
+                    self.gera("", "STR", self.tabela.buscar_simbolo(simbolo)['memoria'], "")
             
     def _analisa_chamada_procedimento(self, simbolo):
         try:
