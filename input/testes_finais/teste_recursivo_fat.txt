@@ -13,7 +13,6 @@ inicio
     senao
         n := x - 1;
         fatorial := x * fatorial
-    fim
 fim;
 
 inicio

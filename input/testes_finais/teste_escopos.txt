@@ -1,14 +1,12 @@
 { Testa variáveis com mesmo nome em escopos diferentes }
-
 programa escopos;
 
 var x: inteiro;
 
 procedimento A;
 var x: inteiro;
-inicio
-    x := 10;
 
+    { CORREÇÃO: O procedimento B deve ser declarado ANTES do inicio de A }
     procedimento B;
     var x: inteiro;
     inicio
@@ -16,7 +14,10 @@ inicio
         escreva(x);   { imprime 20 }
     fim;
 
-    B;
+inicio
+    x := 10;
+
+    B; { Chama o procedimento B declarado acima }
 
     escreva(x);       { imprime 10 }
 fim;
@@ -24,7 +25,7 @@ fim;
 inicio
     x := 1;
     A;
-    escreva(x)        { imprime 1 }
+    escreva(x);       { imprime 1 }
 fim.
 
 { Saída esperada:
