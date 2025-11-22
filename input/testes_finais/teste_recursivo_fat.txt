@@ -11,8 +11,10 @@ inicio
     se x = 0 entao
         fatorial := 1
     senao
+    inicio
         n := x - 1;
         fatorial := x * fatorial
+    fim;
 fim;
 
 inicio
