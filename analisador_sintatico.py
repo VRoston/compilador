@@ -296,17 +296,22 @@ class AnalisadorSintatico:
                         self._consumir("sfecha_parenteses")
 
     def _analisa_escreva(self):
-        simbolo = None
+        simbolo_info = None
         self._consumir("sescreva")
         self._consumir("sabre_parenteses")
         if not self.erro:
             if not self.erro:
                 try:
-                    simbolo = self.tabela.buscar_simbolo(self.token_atual.lexema)
+                    simbolo_info = self.tabela.buscar_simbolo(self.token_atual.lexema)
                 except ValueError as e:
                     print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                     self.erro = True
-                self.gera("", "LDV", simbolo['memoria'], "")
+                if simbolo_info and 'funcao' in simbolo_info['tipo']:
+                    self.gera("", "CALL", simbolo_info['rotulo'], "")
+                    self.gera("", "LDV", "0", "")
+                else:
+                    self.gera("", "LDV", simbolo_info['memoria'], "")
+
                 self.gera("", "PRN", "", "")
                 self._consumir("sidentificador")
                 if not self.erro:
