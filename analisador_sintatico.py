@@ -453,48 +453,49 @@ class AnalisadorSintatico:
             except TypeError as e:
                 print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 self.erro = True
-        for token in posfixa:
-            if token.isnumeric():
-                self.gera("", "LDC", token, "")
-            elif token in ["verdadeiro", "falso"]:
-                valor = 1 if token == "verdadeiro" else 0
-                self.gera("", "LDC", valor, "")
-            elif token[0].isalpha() and token not in ['e', 'ou', 'nao', 'div']:
-                if self.tabela.buscar_simbolo(token)['tipo'] in ['funcao inteiro', 'funcao booleano']:
-                    self.gera("", "CALL", self.tabela.buscar_simbolo(token)['rotulo'], "")
-                    self.gera("", "LDV", "0", "")
-                else:
-                    self.gera("", "LDV", self.tabela.buscar_simbolo(token)['memoria'], "")
-            elif token == '+':
-                self.gera("", "ADD", "", "")
-            elif token == '-':
-                self.gera("", "SUB", "", "")
-            elif token == '*':
-                self.gera("", "MULT", "", "")
-            elif token == 'div':
-                self.gera("", "DIVI", "", "")
-            elif token == '<':
-                self.gera("", "CME", "", "")
-            elif token == '<=':
-                self.gera("", "CMEQ", "", "")
-            elif token == '>':
-                self.gera("", "CMA", "", "")
-            elif token == '>=':
-                self.gera("", "CMAQ", "", "")
-            elif token == '=':
-                self.gera("", "CEQ", "", "")
-            elif token == '!=':
-                self.gera("", "CDIF", "", "")
-            elif token == 'e':
-                self.gera("", "AND", "", "")
-            elif token == 'ou':
-                self.gera("", "OR", "", "")
-            elif token == 'nao':
-                self.gera("", "NEG", "", "")
-            elif token == '-u':
-                self.gera("", "INV", "", "")
-            elif token == '+u':
-                pass
+        if posfixa: 
+            for token in posfixa:
+                if token.isnumeric():
+                    self.gera("", "LDC", token, "")
+                elif token in ["verdadeiro", "falso"]:
+                    valor = 1 if token == "verdadeiro" else 0
+                    self.gera("", "LDC", valor, "")
+                elif token[0].isalpha() and token not in ['e', 'ou', 'nao', 'div']:
+                    if self.tabela.buscar_simbolo(token)['tipo'] in ['funcao inteiro', 'funcao booleano']:
+                        self.gera("", "CALL", self.tabela.buscar_simbolo(token)['rotulo'], "")
+                        self.gera("", "LDV", "0", "")
+                    else:
+                        self.gera("", "LDV", self.tabela.buscar_simbolo(token)['memoria'], "")
+                elif token == '+':
+                    self.gera("", "ADD", "", "")
+                elif token == '-':
+                    self.gera("", "SUB", "", "")
+                elif token == '*':
+                    self.gera("", "MULT", "", "")
+                elif token == 'div':
+                    self.gera("", "DIVI", "", "")
+                elif token == '<':
+                    self.gera("", "CME", "", "")
+                elif token == '<=':
+                    self.gera("", "CMEQ", "", "")
+                elif token == '>':
+                    self.gera("", "CMA", "", "")
+                elif token == '>=':
+                    self.gera("", "CMAQ", "", "")
+                elif token == '=':
+                    self.gera("", "CEQ", "", "")
+                elif token == '!=':
+                    self.gera("", "CDIF", "", "")
+                elif token == 'e':
+                    self.gera("", "AND", "", "")
+                elif token == 'ou':
+                    self.gera("", "OR", "", "")
+                elif token == 'nao':
+                    self.gera("", "NEG", "", "")
+                elif token == '-u':
+                    self.gera("", "INV", "", "")
+                elif token == '+u':
+                    pass
 
         self.expressao = []
         return tipo
