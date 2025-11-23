@@ -2,7 +2,7 @@ import sys
 import os
 from analisador_lexical import AnalisadorLexical
 from analisador_semantico import TabelaSimbolos, posfix, tipo_expressao
-from code_generator import Gera
+from geracao_codigo import Gera
 
 class Rotulo:
     contador = 1
