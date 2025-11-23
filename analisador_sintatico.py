@@ -619,5 +619,6 @@ if __name__ == "__main__":
         print("Por favor, forneça um arquivo .txt")
         sys.exit(1)
     
-    analisador = AnalisadorSintatico(caminho_arquivo, nome_arquivo)
+    output_file = os.path.join(os.path.dirname(caminho_arquivo), f"{nome_arquivo}.obj")
+    analisador = AnalisadorSintatico(caminho_arquivo, output_file)
     analisador.analisar()

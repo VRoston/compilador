@@ -1,0 +1,68 @@
+    START  
+    ALLOC 0 1
+    ALLOC 1 9
+    LDC 2 
+    STR 1 
+    LDC 3 
+    STR 2 
+    LDC 4 
+    STR 3 
+    LDC 5 
+    STR 4 
+    LDC 6 
+    STR 5 
+    LDC 7 
+    STR 6 
+    LDC 8 
+    STR 7 
+    LDC 9 
+    STR 8 
+    LDC 10 
+    STR 9 
+    LDV 1 
+    LDV 2 
+    ADD  
+    LDV 3 
+    LDV 4 
+    SUB  
+    MULT  
+    LDV 5 
+    LDV 6 
+    MULT  
+    LDV 7 
+    LDV 8 
+    ADD  
+    DIVI  
+    ADD  
+    LDV 9 
+    LDV 1 
+    SUB  
+    LDV 2 
+    LDV 2 
+    MULT  
+    LDV 2 
+    MULT  
+    LDV 2 
+    MULT  
+    ADD  
+    MULT  
+    LDV 3 
+    LDV 4 
+    ADD  
+    LDV 5 
+    ADD  
+    LDV 6 
+    ADD  
+    LDV 7 
+    ADD  
+    LDV 8 
+    LDC 3 
+    SUB  
+    MULT  
+    DIVI  
+    STR 1 
+    LDV 1 
+    PRN  
+    DALLOC 1 9
+    DALLOC 0 1
+    HLT  
