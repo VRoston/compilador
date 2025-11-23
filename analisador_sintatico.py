@@ -100,7 +100,8 @@ class AnalisadorSintatico:
     def analisar(self):
         self.token_atual = self.lexador.proximo_token()
         self._analisar_programa()
-        self.gera.escreve()
+        if not self.erro:
+            self.gera.escreve()
         self.lexador.fechar()
 
     # AQUI DEVE TER CÓDIGO DE GERAÇÃO DE RÓTULO
