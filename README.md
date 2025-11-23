@@ -178,7 +178,7 @@ Responsabilidades:
 - mapear rótulos → índices
 - criar lista linear de instruções para a VM
 
-# 7. Estruturas de Dados Utilizadas no Compilador
+# 8. Estruturas de Dados Utilizadas no Compilador
 
 ## 1. Estruturas de Dados do Analisador Léxico
 
@@ -382,7 +382,7 @@ Isso torna **recursão 100% segura**.
    
 ---
 
-# Como Rodar o Compilador no Linux (com venv)
+# 9. Como Rodar o Compilador no Linux (com venv)
 
 A execução do projeto requer **Python 3.10+**.
 
@@ -424,7 +424,7 @@ A interface abrirá com:
 
 ---
 
-# Como Usar o Compilador
+# 10. Como Usar o Compilador
 
 ### 1. Escreva um programa
 Exemplo:
