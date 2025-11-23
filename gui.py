@@ -1,51 +1,51 @@
-from tkinter import Tk, Frame, Button, Label, Listbox, Scrollbar, Entry, messagebox, scrolledtext, filedialog, PanedWindow
+from tkinter import Tk, Frame, Button, Label, Listbox, Scrollbar, Entry, messagebox, scrolledtext, filedialog, PanedWindow  # GUI toolkit padrão
 
 class MVD_GUI(Tk):
     
     def __init__(self):
-        super().__init__()
-        self.title("Simulador MVD (Máquina Virtual Didática)")
-        self.geometry("1000x700")
+        super().__init__()  # Inicializa janela Tk
+        self.title("Simulador MVD (Máquina Virtual Didática)")  # Título da janela
+        self.geometry("1000x700")   # Tamanho inicial da GUI
         
-        self.mvd = None  # This will be initialized in main.py
-        self.filepath = None
-        self.running_fast = False
-        self.LABEL_COL_WIDTH = 4
+        self.mvd = None                     # Instância da MVD será atribuída pelo main.py
+        self.filepath = None                # Caminho para arquivo .obj carregado
+        self.running_fast = False           # Indica se execução contínua está rodando
+        self.LABEL_COL_WIDTH = 4            # Tamanho fixo da coluna de rótulos
 
-        self.criar_widgets()
-        self._set_controls_state("INICIAL")
+        self.criar_widgets()                # Cria todos os widgets da interface
+        self._set_controls_state("INICIAL") # Inicializa estado dos botões
 
     def criar_widgets(self):
-        frame_controles = Frame(self, bd=2, relief='raised')
+        frame_controles = Frame(self, bd=2, relief='raised')                                                            # Área superior dos controles
         frame_controles.pack(side='top', fill='x', padx=5, pady=5)
 
-        self.btn_load = Button(frame_controles, text="Carregar Arquivo (.obj)", command=self.carregar_arquivo)
+        self.btn_load = Button(frame_controles, text="Carregar Arquivo (.obj)", command=self.carregar_arquivo)          # Botão abrir arquivo
         self.btn_load.pack(side='left', padx=5, pady=5)
 
-        self.btn_run = Button(frame_controles, text="Executar", command=self.executar_direto, bg="#c0ffc0")
+        self.btn_run = Button(frame_controles, text="Executar", command=self.executar_direto, bg="#c0ffc0")           # Executa direto
         self.btn_run.pack(side='left', padx=5, pady=5)
 
-        self.btn_step = Button(frame_controles, text="Passo-a-Passo", command=self.executar_passo)
+        self.btn_step = Button(frame_controles, text="Passo-a-Passo", command=self.executar_passo)                      # Executa instrução a instrução
         self.btn_step.pack(side='left', padx=5, pady=5)
 
-        self.btn_stop = Button(frame_controles, text="Parar", command=self.parar_execucao, bg="#ffc0c0")
+        self.btn_stop = Button(frame_controles, text="Parar", command=self.parar_execucao, bg="#ffc0c0")              # Interrompe execução
         self.btn_stop.pack(side='left', padx=5, pady=5)
 
-        self.btn_reset = Button(frame_controles, text="Resetar", command=self.resetar_mvd)
+        self.btn_reset = Button(frame_controles, text="Resetar", command=self.resetar_mvd)                              # Reseta MVD e interface
         self.btn_reset.pack(side='left', padx=5, pady=5)
 
-        self.status_label = Label(frame_controles, text="Nenhum arquivo carregado.", bd=1, relief='sunken', anchor='w')
+        self.status_label = Label(frame_controles, text="Nenhum arquivo carregado.", bd=1, relief='sunken', anchor='w') # Status atual
         self.status_label.pack(side='right', fill='x', expand=True, padx=5, pady=5)
-
+        # Painel dividido → Código (P) e Pilha (M)
         frame_principal = PanedWindow(self, orient='horizontal', sashrelief='raised', sashwidth=5)
         frame_principal.pack(fill='both', expand=True, padx=5, pady=5)
-
+        # Painel da memória P (programa)
         frame_codigo = Frame(frame_principal, bd=2, relief='sunken')
         # largura desejada inicial para o painel de código (favorece o código)
         frame_codigo.config(width=700)
         Label(frame_codigo, text="Programa (Memória P)").pack(side='top', fill='x')
         scrollbar_codigo = Scrollbar(frame_codigo, orient='vertical')
-        self.program_listbox = Listbox(frame_codigo, yscrollcommand=scrollbar_codigo.set, font=("Courier", 10))
+        self.program_listbox = Listbox(frame_codigo, yscrollcommand=scrollbar_codigo.set, font=("Courier", 10))         # Listagem das instruções da MVD
         scrollbar_codigo.config(command=self.program_listbox.yview)
         scrollbar_codigo.pack(side='right', fill='y')
         self.program_listbox.pack(side='left', fill='both', expand=True)
@@ -57,29 +57,29 @@ class MVD_GUI(Tk):
         frame_pilha.config(width=300)
         Label(frame_pilha, text="Pilha de Dados (Memória M)").pack(side='top', fill='x')
         scrollbar_pilha = Scrollbar(frame_pilha, orient='vertical')
-        self.stack_listbox = Listbox(frame_pilha, yscrollcommand=scrollbar_pilha.set, font=("Courier", 10))
+        self.stack_listbox = Listbox(frame_pilha, yscrollcommand=scrollbar_pilha.set, font=("Courier", 10))             # Listagem da pilha
         scrollbar_pilha.config(command=self.stack_listbox.yview)
         scrollbar_pilha.pack(side='right', fill='y')
         self.stack_listbox.pack(side='left', fill='both', expand=True)
         # adiciona o painel da pilha com minsize menor
         frame_principal.add(frame_pilha, minsize=200)
-
+        # Painel inferior: entrada RD e saída PRN
         frame_io = Frame(self, height=150, bd=2, relief='sunken')
         frame_io.pack(side='bottom', fill='x', padx=5, pady=5)
         frame_io.pack_propagate(False)
 
-        self.input_frame = Frame(frame_io)
+        self.input_frame = Frame(frame_io)              # Entrada para instrução RD
         Label(self.input_frame, text="Entrada (RD):", font=("Courier", 10, "bold")).pack(side='left', padx=5)
-        self.input_entry = Entry(self.input_frame, font=("Courier", 10), width=20)
+        self.input_entry = Entry(self.input_frame, font=("Courier", 10), width=20)                                      # Campo de texto para RD
         self.input_entry.pack(side='left', padx=5)
         self.input_submit = Button(self.input_frame, text="Submeter", command=self.submeter_entrada)
         self.input_submit.pack(side='left', padx=5)
         self.input_entry.bind("<Return>", (lambda event: self.submeter_entrada()))
 
         Label(frame_io, text="Saída (PRN) e Erros:", anchor='nw').pack(side='top', fill='x', padx=5)
-        self.output_text = scrolledtext.ScrolledText(frame_io, height=5, font=("Courier", 10), wrap='word', state='disabled')
+        self.output_text = scrolledtext.ScrolledText(frame_io, height=5, font=("Courier", 10), wrap='word', state='disabled')      # Área de log
         self.output_text.pack(fill='both', expand=True, padx=5, pady=5)
-
+    # Ativa/desativa botões dependendo do estado da execução
     def _set_controls_state(self, state):
         if state == "INICIAL":
             self.btn_load.config(state='normal')
@@ -107,25 +107,25 @@ class MVD_GUI(Tk):
             self.btn_reset.config(state='normal')
 
     def log_output(self, message, is_error=False):
-        self.output_text.config(state='normal')
+        self.output_text.config(state='normal')                     # Habilita edição
         tag = "error" if is_error else "output"
-        self.output_text.tag_configure("error", foreground="red")
+        self.output_text.tag_configure("error", foreground="red")   # Escolhe cor azul/vermelho
         self.output_text.tag_configure("output", foreground="blue")
-        self.output_text.insert('end', f"{message}\n", (tag,))
-        self.output_text.see('end')
-        self.output_text.config(state='disabled')
+        self.output_text.insert('end', f"{message}\n", (tag,))      # Insere texto
+        self.output_text.see('end')                                 # Rola automaticamente
+        self.output_text.config(state='disabled')                   # Bloqueia edição
 
-    def atualizar_ui(self):
+    def atualizar_ui(self):                                         # Atualiza seleção da instrução atual
         if self.mvd.i < self.program_listbox.size():
             self.program_listbox.selection_clear(0, 'end')
             self.program_listbox.selection_set(self.mvd.i)
             self.program_listbox.see(self.mvd.i)
             self.program_listbox.activate(self.mvd.i)
-
+        # Atualiza visualização da pilha
         self.stack_listbox.delete(0, 'end')
         limite_pilha = max(50, self.mvd.s + 20)
         
-        indices_para_mostrar = set(range(20))
+        indices_para_mostrar = set(range(20))                       # Sempre mostra topo da pilha
         indices_para_mostrar.update(range(max(0, self.mvd.s - 20), self.mvd.s + 20))
         
         last_idx = -2
@@ -134,10 +134,10 @@ class MVD_GUI(Tk):
                 break
             
             if i != last_idx + 1:
-                self.stack_listbox.insert('end', f"...")
+                self.stack_listbox.insert('end', f"...")            # Indica salto visual
             
             val = self.mvd.M[i]
-            prefixo = "s ->" if i == self.mvd.s else "    "
+            prefixo = "s ->" if i == self.mvd.s else "    "         # Marca topo da pilha
             self.stack_listbox.insert('end', f"{prefixo} M[{i}]: {val}")
             
             last_idx = i
@@ -153,25 +153,25 @@ class MVD_GUI(Tk):
         if not filepath:
             return
 
-        self.filepath = filepath
-        self.resetar_mvd()
+        self.filepath = filepath                                    # Guarda caminho do arquivo
+        self.resetar_mvd()                                          # Reseta MVD e recarrega programa
         
     def resetar_mvd(self):
-        self.running_fast = False
-        self.mvd.resetar()
+        self.running_fast = False                                   # Cancela execução contínua
+        self.mvd.resetar()                                          # Reseta memória, registradores etc.
 
-        self.program_listbox.delete(0, 'end')
-        self.stack_listbox.delete(0, 'end')
+        self.program_listbox.delete(0, 'end')                       # Limpa lista de instruções
+        self.stack_listbox.delete(0, 'end')                         # Limpa pilha
         self.output_text.config(state='normal')
-        self.output_text.delete(1.0, 'end')
+        self.output_text.delete(1.0, 'end')                         # Limpa log
         self.output_text.config(state='disabled')
-        self.input_frame.pack_forget()
+        self.input_frame.pack_forget()                              # Esconde campo RD
 
         if self.filepath:
             try:
-                self.mvd.carregar_programa(self.filepath)
+                self.mvd.carregar_programa(self.filepath)           # Carrega novo .obj
                 
-                for i, (mnem, a1, a2) in enumerate(self.mvd.P):
+                for i, (mnem, a1, a2) in enumerate(self.mvd.P):     # Monta listbox
                     a1_str = str(a1) if a1 is not None else ""
                     a2_str = str(a2) if a2 is not None else ""
                     label = None
@@ -201,26 +201,26 @@ class MVD_GUI(Tk):
             self._set_controls_state("INICIAL")
             
     def executar_direto(self):
-        if not self.mvd.running:
+        if not self.mvd.running:                                    # Só executa se VM estiver ativa
             return
             
-        self.running_fast = True
+        self.running_fast = True                                    # Modo contínuo
         self._set_controls_state("RODANDO")
         self.status_label.config(text="Executando...")
-        self.run_loop()
+        self.run_loop()                                             # Começa loop rápido
 
     def run_loop(self):
         if not self.running_fast:
             return
             
-        status, data = self.executar_passo(is_direct_run=True)
+        status, data = self.executar_passo(is_direct_run=True)      # Executa próxima instrução
         
         if status == "RUNNING" or status == "PRN_OUTPUT":
-            self.after(1, self.run_loop) 
+            self.after(1, self.run_loop)                            # Agenda próxima execução
 
     def parar_execucao(self):
-        self.running_fast = False
-        self.mvd.running = False
+        self.running_fast = False                                   # Cancela modo contínuo
+        self.mvd.running = False                                    # Cancela execução da VM
         self._set_controls_state("CARREGADO")
         self.status_label.config(text="Execução parada pelo usuário.")
         self.input_frame.pack_forget()
@@ -231,11 +231,11 @@ class MVD_GUI(Tk):
             return "HALTED", None
 
         try:
-            status, data = self.mvd.executar_passo()
+            status, data = self.mvd.executar_passo()                # Executa 1 instrução
         except Exception as e:
             status, data = "ERROR", str(e)
             
-        self.atualizar_ui() 
+        self.atualizar_ui()                                         # Atualiza interface após a execução
 
         if status == "RUNNING":
             if not is_direct_run:
@@ -275,12 +275,12 @@ class MVD_GUI(Tk):
             
         return status, data
 
-    def submeter_entrada(self):
-        valor = self.input_entry.get()
+    def submeter_entrada(self):                             # Pega valor do usuário
+        valor = self.input_entry.get()                  
         self.input_entry.delete(0, 'end')
-        self.input_frame.pack_forget()
+        self.input_frame.pack_forget()                      # Esconde campo RD
         
-        self.mvd.fornecer_entrada(valor)
+        self.mvd.fornecer_entrada(valor)                    # Envia para VM
         
         if self.running_fast:
             self._set_controls_state("RODANDO")

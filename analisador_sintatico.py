@@ -4,20 +4,20 @@ from analisador_lexical import AnalisadorLexical
 from analisador_semantico import TabelaSimbolos, posfix, tipo_expressao
 from geracao_codigo import Gera
 
-class Rotulo:
+class Rotulo:   # Classe utilitária que gera rótulos únicos para desvios (L1, L2, ...)
     contador = 1
 
-    def __new__(cls):
+    def __new__(cls):   # Cria um novo rótulo único automaticamente
         rotulo = f"L{cls.contador}"
         cls.contador += 1
         return rotulo
 
     @classmethod
-    def go_back_i_want_to_be_monke(cls):
+    def go_back_i_want_to_be_monke(cls):   # Decrementa o contador para reutilizar o último rótulo gerado
         cls.contador = cls.contador - 1
 
-class AnalisadorSintatico:
-    def __init__(self, arquivo_entrada, arquivo_saida):
+class AnalisadorSintatico:  # Classe principal que coordena toda a análise sintática e geração de código
+    def __init__(self, arquivo_entrada, arquivo_saida): # Inicializa estado, tabela, léxico e gerador
         self.token_atual = None
         self.erro = False
         self.expressao = []
@@ -74,7 +74,7 @@ class AnalisadorSintatico:
             "serro": "erro",
         }
 
-    def _consumir(self, simbolo_esperado):
+    def _consumir(self, simbolo_esperado):  # Garante que o token atual é o esperado e avança
         """Verifica o token atual e avança para o próximo."""
         if self.token_atual:
             simbolo_anterior = self.token_atual.simbolo
@@ -97,7 +97,7 @@ class AnalisadorSintatico:
         else:
             print(f"Erro sintático: Esperado '{self.keywords[simbolo_esperado]}', mas encontrado 'EOF'")
     
-    def analisar(self):
+    def analisar(self): # Ponto de entrada — inicia parsing do programa e escreve o .obj
         self.token_atual = self.lexador.proximo_token()
         self._analisar_programa()
         if not self.erro:
@@ -105,7 +105,7 @@ class AnalisadorSintatico:
         self.lexador.fechar()
 
     # AQUI DEVE TER CÓDIGO DE GERAÇÃO DE RÓTULO
-    def _analisar_programa(self): 
+    def _analisar_programa(self):   # Analisa cabeçalho "programa identificador; ... fim."
         """Analisa a estrutura principal do programa."""     
         self._consumir("sprograma")
         self.gera("", "START", "", "")
@@ -123,7 +123,7 @@ class AnalisadorSintatico:
                     self.gera("", "DALLOC", 0, 1)
                     self.gera("", "HLT", "", "")
         
-    def analisar_bloco(self, rotulo_skip, final=False):
+    def analisar_bloco(self, rotulo_skip, final=False): # Analisa bloco: variáveis + subrotinas + comandos
         vars_dalloc = None
         self._analisa_et_variaveis()
         if not self.erro:
@@ -134,7 +134,7 @@ class AnalisadorSintatico:
 
                 self._gera_dalloc()
 
-    def _gera_dalloc(self):
+    def _gera_dalloc(self): # Gera DALLOCs do escopo atual para liberar variáveis
         """Gera as instruções de DALLOC para o escopo atual."""
         if self.escopos_dalloc and len(self.escopos_dalloc) > self.escopo_atual:
             for var_range in reversed(self.escopos_dalloc[self.escopo_atual]):
@@ -143,7 +143,7 @@ class AnalisadorSintatico:
             self.escopos_dalloc.pop()
             self.escopo_atual -= 1
 
-    def _analisa_et_variaveis(self):
+    def _analisa_et_variaveis(self):    # Gerencia todas as declarações iniciando com 'var'
         """Analisa todas as seções de declaração de variáveis."""
         if self.token_atual and self.token_atual.simbolo == "svar":
             self._consumir("svar")
@@ -151,7 +151,7 @@ class AnalisadorSintatico:
                 while self.token_atual and self.token_atual.simbolo == "sidentificador":
                     self._analisa_variaveis()
 
-    def _analisa_variaveis(self):
+    def _analisa_variaveis(self):   # Analisa linha "a, b, c : inteiro;" e aloca memória
         """Analisa uma linha de declaração como 'a, b, c : inteiro;'"""
         variaveis_para_declarar = []
         end_inicial_var= self.tabela.endereco_memoria
@@ -196,7 +196,7 @@ class AnalisadorSintatico:
         self.gera("", "ALLOC", end_inicial_var, self.tabela.endereco_memoria - end_inicial_var)
         self.escopos_dalloc[-1].append((end_inicial_var, self.tabela.endereco_memoria - end_inicial_var))
 
-    def _analisa_comandos(self, rotulo_skip, func_proc, final=False):
+    def _analisa_comandos(self, rotulo_skip, func_proc, final=False):   # Analisa bloco 'inicio ... fim'
         if self.token_atual and self.token_atual.simbolo == "sinicio":
             if rotulo_skip != None:
                 # Se houve sub-rotinas (func_proc >= 1), o JMP lá em cima pulou pra cá.
@@ -220,7 +220,7 @@ class AnalisadorSintatico:
             self.erro = True
                     
 
-    def _analisa_comando_simples(self, sentao_ssenao = False):
+    def _analisa_comando_simples(self, sentao_ssenao = False):  # Executa parsing de um único comando
         """Analisa um comando simples dentro do bloco de comandos."""
         if self.token_atual.simbolo == "sidentificador":
             self._analisa_atrib_chprocedimento()
@@ -267,7 +267,7 @@ class AnalisadorSintatico:
             print(f"Erro Sintático na linha {self.token_atual.linha}: Comando inválido ou inesperado '{self.token_atual.lexema}'.")
             self.erro = True
 
-    def _analisa_atrib_chprocedimento(self):
+    def _analisa_atrib_chprocedimento(self):    # Diferencia entre atribuição e chamada de procedimento
         simbolo = self.token_atual.lexema
         self._consumir("sidentificador")
         if not self.erro:
@@ -278,7 +278,7 @@ class AnalisadorSintatico:
                 self.gera("", "CALL", self.tabela.buscar_simbolo(simbolo)['rotulo'], "")
                 self._analisa_chamada_procedimento(simbolo)
 
-    def _analisa_leia(self):
+    def _analisa_leia(self):    # Analisa comando 'leia(x)' e gera RD + STR
         simbolo = None
         self._consumir("sleia")
         self._consumir("sabre_parenteses")
@@ -296,7 +296,7 @@ class AnalisadorSintatico:
                     if not self.erro:
                         self._consumir("sfecha_parenteses")
 
-    def _analisa_escreva(self):
+    def _analisa_escreva(self):  # Analisa 'escreva(x)' e gera LDV/CALL + PRN
         simbolo_info = None
         self._consumir("sescreva")
         self._consumir("sabre_parenteses")
@@ -318,7 +318,7 @@ class AnalisadorSintatico:
                 if not self.erro:
                     self._consumir("sfecha_parenteses")
     
-    def _analisa_enquanto(self): 
+    def _analisa_enquanto(self):  # Comando 'enquanto ... faca' com geração de rótulos do laço
         rotulo_inicio = Rotulo()
         rotulo_sair = Rotulo()
         self._consumir("senquanto")
@@ -334,7 +334,7 @@ class AnalisadorSintatico:
             print(f"Erro Semântico na linha {self.token_atual.linha}: Expressão do 'enquanto' deve ser do tipo booleano.")
             self.erro = True     
 
-    def _analisa_se(self):
+    def _analisa_se(self):  # Comando condicional 'se ... entao ... senao'
         rotulo_se = Rotulo()
         rotulo_pula_senao = Rotulo()
         self._consumir("sse")
@@ -355,7 +355,7 @@ class AnalisadorSintatico:
             print(f"Erro Semântico na linha {self.token_atual.linha}: Expressão do 'se' deve ser do tipo booleano.")
             self.erro = True
 
-    def _analisa_subrotinas(self, rotulo_skip):
+    def _analisa_subrotinas(self, rotulo_skip): # Detecta e processa funções e procedimentos
         subrotinas = 0
         flag_jump_gerado = False # Controle para gerar o JMP apenas uma vez
 
@@ -381,7 +381,7 @@ class AnalisadorSintatico:
         
         return subrotinas
 
-    def _analisa_declaracao_procedimento(self):
+    def _analisa_declaracao_procedimento(self): # Analisa e gera código para um procedimento
         rotulo_procedimento = Rotulo()
         rotulo_skip = Rotulo() # Rótulo para o bloco interno deste procedimento
         
@@ -408,7 +408,7 @@ class AnalisadorSintatico:
                         self.analisar_bloco(rotulo_skip) # Recursão normal
                         self.gera("", "RETURN", "", "")
 
-    def _analisa_declaracao_funcao(self):
+    def _analisa_declaracao_funcao(self):   # Analisa declaração de função e seu tipo de retorno
         rotulo_funcao = Rotulo()
         rotulo_skip = Rotulo()
         nome_funcao = self.token_atual.lexema
@@ -442,7 +442,7 @@ class AnalisadorSintatico:
                     print(f"Erro sintático na linha {self.token_atual.linha}: Tipo de retorno esperado (inteiro ou booleano)")
                     self.erro = True
                     
-    def _expressao(self):
+    def _expressao(self):   # Constrói expressão, converte para pós-fixa e gera código da expressão
         posfixa = None
         tipo = None
         self._analisa_expressao()
@@ -501,7 +501,7 @@ class AnalisadorSintatico:
         self.expressao = []
         return tipo
 
-    def _analisa_expressao(self):
+    def _analisa_expressao(self):   # Analisa expressões com operadores relacionais
         self._analisa_expressao_simples()
         while self.token_atual and self.token_atual.simbolo in ["smaior", "smaiorigual", "smenor", "smenorigual", "sigual", "sdif"]:
             if not self.erro:
@@ -512,7 +512,7 @@ class AnalisadorSintatico:
             else:
                 break
 
-    def _analisa_expressao_simples(self):
+    def _analisa_expressao_simples(self):   # Expressões com +, -, ou lógico, etc.
         if self.token_atual and self.token_atual.simbolo in ["smais", "smenos"]:
             self.expressao.append(self.token_atual.lexema)
             self._consumir(self.token_atual.simbolo)
@@ -525,7 +525,7 @@ class AnalisadorSintatico:
             if not self.erro:
                 self._analisa_termo()
 
-    def _analisa_termo(self):
+    def _analisa_termo(self):   # Termo com prioridade: *, div, e, ou
         self._analisa_fator()
         while self.token_atual and self.token_atual.simbolo in ["smult", "sdiv", "se", "sou"]:
             self.expressao.append(self.token_atual.lexema)
@@ -533,7 +533,7 @@ class AnalisadorSintatico:
             if not self.erro:
                 self._analisa_fator()
 
-    def _analisa_fator(self):
+    def _analisa_fator(self):   # Fatores: números, variáveis, parênteses, chamadas e 'nao'
         if self.token_atual.simbolo == "sidentificador":
             try:
                 simbolo = self.tabela.buscar_simbolo(self.token_atual.lexema)
@@ -569,7 +569,7 @@ class AnalisadorSintatico:
             print(f"Erro Sintático na linha {self.token_atual.linha}: Fator inválido ou inesperado '{self.token_atual.lexema}'.")
             self.erro = True
 
-    def _analisa_atribuicao(self, simbolo):
+    def _analisa_atribuicao(self, simbolo): # Verifica tipo e gera STR para atribuição
         tipo = None
         try:
             tipo = self.tabela.buscar_simbolo(simbolo)['tipo']
@@ -590,21 +590,21 @@ class AnalisadorSintatico:
                 else:
                     self.gera("", "STR", self.tabela.buscar_simbolo(simbolo)['memoria'], "")
             
-    def _analisa_chamada_procedimento(self, simbolo):
+    def _analisa_chamada_procedimento(self, simbolo):   # Apenas valida a existência do procedimento
         try:
             self.tabela.buscar_simbolo(simbolo)
         except ValueError as e:
             print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             self.erro = True
 
-    def _analisa_chamada_funcao(self, simbolo):
+    def _analisa_chamada_funcao(self, simbolo): # Valida existência da função ao analisá-la
         try:
             self.tabela.buscar_simbolo(simbolo)
         except ValueError as e:
             print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             self.erro = True
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # Função principal: prepara arquivos e inicia análise
     if len(sys.argv) != 2:
         print("Erro: Modo de uso incorreto.")
         print("Uso: python analisador_sintatico.py <caminho_para_o_arquivo.txt>")
