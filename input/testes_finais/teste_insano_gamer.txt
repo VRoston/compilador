@@ -1,0 +1,68 @@
+programa teste_tortura;
+
+var global_x, global_y, acumulador : inteiro;
+    controle, flag : booleano;
+
+procedimento resetar;
+var temp : inteiro;
+inicio
+    temp := 0;
+    acumulador := temp;
+    controle := verdadeiro
+fim;
+
+funcao operacao_matematica_pesada : inteiro;
+var local_a, local_b, local_c : inteiro;
+inicio
+    local_a := 10;
+    local_b := 5;
+    local_c := 2;
+    
+    { Teste de precedencia: 
+      Deve calcular (5 * 2) = 10 -> 10 + 10 = 20 -> 20 - (20 div 2) = 10 
+      Se a pilha posfixa estiver errada, isso vai dar um numero maluco }
+    operacao_matematica_pesada := local_a + local_b * local_c - ( global_x * 2 div local_c )
+fim;
+
+procedimento processar_dados;
+var global_x : inteiro; { SOMBREAMENTO: Esta variavel esconde a global_x lá de cima }
+inicio
+    global_x := 50; { Mexe na local, não na global }
+    
+    se (global_x > 10) e (acumulador < 1000) entao
+    inicio
+        acumulador := acumulador + global_x;
+        escreva(acumulador)
+    fim;
+    senao
+    inicio
+        acumulador := acumulador - 1
+    fim;
+fim;
+
+inicio
+    resetar;
+    leia(global_x); { Digite 10 para o teste ideal }
+    leia(global_y); { Digite 5 para o teste ideal }
+
+    escreva(global_x);
+
+    enquanto (global_x > 0) e controle faca
+    inicio
+        { Teste de Expressão Logica Complexa com 'nao' e parenteses }
+        se nao (global_x = global_y) ou (acumulador > 500) entao
+        inicio
+            acumulador := acumulador + operacao_matematica_pesada;
+            
+            { Chamada de procedimento que tem variavel local com mesmo nome da global }
+            processar_dados
+        fim;
+
+        global_x := global_x - 1;
+
+        se global_x = 0 entao
+            controle := falso
+    fim;
+
+    escreva(acumulador)
+fim.
