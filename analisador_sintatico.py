@@ -77,7 +77,7 @@ class AnalisadorSintatico:  # Classe principal que coordena toda a análise sint
     def _consumir(self, simbolo_esperado):  # Garante que o token atual é o esperado e avança
         """Verifica o token atual e avança para o próximo."""
         if self.token_atual:
-            simbolo_anterior = self.token_atual.simbolo
+            simbolo_anterior = self.token_atual.lexema
 
             if self.token_atual.simbolo == simbolo_esperado:
                 self.token_atual = self.lexador.proximo_token()
@@ -89,7 +89,7 @@ class AnalisadorSintatico:  # Classe principal que coordena toda a análise sint
                 return
 
             if self.token_atual:
-                if simbolo_anterior == self.token_atual.simbolo and simbolo_anterior not in ["sinicio", "sfim", "sabre_parenteses", "sfecha_parenteses"]:
+                if simbolo_anterior == self.token_atual.lexema and simbolo_anterior not in ["inicio", "fim", "(", ")"]:
                     print(f"Erro Sintático na linha {self.token_atual.linha}: Símbolo '{self.token_atual.lexema}' duplicado.")
                     self.erro = True
                     return
@@ -118,7 +118,10 @@ class AnalisadorSintatico:  # Classe principal que coordena toda a análise sint
             if not self.erro:
                 self._consumir("sponto_virgula")
                 if not self.erro:
-                    rotulo_skip = self.tabela.buscar_simbolo(self.nome_programa)['rotulo']
+                    try:
+                        rotulo_skip = self.tabela.buscar_simbolo(self.nome_programa)['rotulo']
+                    except ValueError as e:
+                        print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                     self.analisar_bloco(rotulo_skip, final=True)
                     self.gera("", "DALLOC", 0, 1)
                     self.gera("", "HLT", "", "")
@@ -275,7 +278,10 @@ class AnalisadorSintatico:  # Classe principal que coordena toda a análise sint
                 self._consumir("satribuicao")
                 self._analisa_atribuicao(simbolo)
             else:
-                self.gera("", "CALL", self.tabela.buscar_simbolo(simbolo)['rotulo'], "")
+                try:
+                    self.gera("", "CALL", self.tabela.buscar_simbolo(simbolo)['rotulo'], "")
+                except ValueError as e:
+                    print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 self._analisa_chamada_procedimento(simbolo)
 
     def _analisa_leia(self):    # Analisa comando 'leia(x)' e gera RD + STR
@@ -395,8 +401,10 @@ class AnalisadorSintatico:  # Classe principal que coordena toda a análise sint
                 self.erro = True
             
             # Gera o rótulo de entrada do procedimento
-            self.gera(self.tabela.buscar_simbolo(self.token_atual.lexema)['rotulo'], "NULL", "", "")
-            
+            try:
+                self.gera(self.tabela.buscar_simbolo(self.token_atual.lexema)['rotulo'], "NULL", "", "")
+            except ValueError as e:
+                print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             if not self.erro:
                 self._consumir("sidentificador")
                 if not self.erro:
@@ -427,9 +435,10 @@ class AnalisadorSintatico:  # Classe principal que coordena toda a análise sint
                         except ValueError as e:
                             print(f"Erro Semântico: {e}")
                             self.erro = True
-                        
-                        self.gera(self.tabela.buscar_simbolo(nome_funcao)['rotulo'], "NULL", "", "")
-                        
+                        try:
+                            self.gera(self.tabela.buscar_simbolo(nome_funcao)['rotulo'], "NULL", "", "")
+                        except ValueError as e:
+                            print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                         if not self.erro:
                             self._consumir("sponto_virgula")
                             if not self.erro:
@@ -463,10 +472,16 @@ class AnalisadorSintatico:  # Classe principal que coordena toda a análise sint
                     self.gera("", "LDC", valor, "")
                 elif token[0].isalpha() and token not in ['e', 'ou', 'nao', 'div']:
                     if self.tabela.buscar_simbolo(token)['tipo'] in ['funcao inteiro', 'funcao booleano']:
-                        self.gera("", "CALL", self.tabela.buscar_simbolo(token)['rotulo'], "")
+                        try:
+                            self.gera("", "CALL", self.tabela.buscar_simbolo(token)['rotulo'], "")
+                        except ValueError as e:
+                            print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                         self.gera("", "LDV", "0", "")
                     else:
-                        self.gera("", "LDV", self.tabela.buscar_simbolo(token)['memoria'], "")
+                        try:
+                            self.gera("", "LDV", self.tabela.buscar_simbolo(token)['memoria'], "")
+                        except ValueError as e:
+                            print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
                 elif token == '+':
                     self.gera("", "ADD", "", "")
                 elif token == '-':
@@ -588,7 +603,10 @@ class AnalisadorSintatico:  # Classe principal que coordena toda a análise sint
                 if self.tabela.buscar_simbolo(simbolo)['tipo'] in ['funcao inteiro', 'funcao booleano']:
                     self.gera("", "STR", "0", "")
                 else:
-                    self.gera("", "STR", self.tabela.buscar_simbolo(simbolo)['memoria'], "")
+                    try:
+                        self.gera("", "STR", self.tabela.buscar_simbolo(simbolo)['memoria'], "")
+                    except ValueError as e:
+                        print(f"Erro Semântico na linha {self.token_atual.linha}: {e}")
             
     def _analisa_chamada_procedimento(self, simbolo):   # Apenas valida a existência do procedimento
         try:
