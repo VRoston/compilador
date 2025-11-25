@@ -370,7 +370,7 @@ Isso torna **recursão 100% segura**.
 
 ---
 
-# 5. Fluxo Completo da Execução do Compilador
+## 5. Fluxo Completo da Execução do Compilador
 
 1. **Léxico** → transforma texto em tokens  
 2. **Sintático** → valida a gramática  
@@ -423,6 +423,166 @@ A interface abrirá com:
 - acesso à MVD
 
 ---
+
+# 10. Uso dos Executáveis do Compilador e da Máquina Virtual
+
+Este documento explica **como utilizar os executáveis já gerados** do projeto (o compilador e a Máquina Virtual Didática – MVD) em **qualquer computador**, sem necessidade de instalar Python ou dependências.
+
+---
+
+## 1. Estrutura dos Executáveis
+
+Após gerar os executáveis com PyInstaller, cada um deles vem dentro de uma pasta `dist/`. Os principais arquivos que você terá são:
+
+* **main_compilador_interface** → executável do editor + compilador
+* **main_mvd_interface** → executável da Máquina Virtual Didática (MVD)
+
+Cada arquivo é totalmente independente e pode ser enviado para qualquer máquina.
+
+---
+
+## 2. Como Executar no Linux
+
+### 2.1. Dê permissão de execução
+
+deixe o arquivo executável rodável:
+`bash\chmod +x main_mvd_interfacechmod +x main_compilador_interface`
+
+### 2.2. Execute diretamente pelo terminal
+
+```bash
+./main_mvd_interface
+```
+
+```bash
+./main_compilador_interface
+```
+
+### 2.3. Execução com clique duplo
+
+Linux normalmente **não executa binários automaticamente ao clicar** por segurança.
+
+Para permitir isso:
+
+1. Abra o gerenciador de arquivos
+2. Clique com botão direito → **Propriedades**
+3. Aba *Permissões*
+4. Ative **“Permitir executar como um programa”**
+5. Clique duas vezes para abrir
+
+Se sua distro bloquear, crie um arquivo `.desktop`:
+
+```bash
+nano ~/.local/share/applications/mvd.desktop
+```
+
+Conteúdo:
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=MVD
+Exec=/caminho/para/main_mvd_interface
+Icon=/caminho/para/icone.png
+Terminal=false
+```
+
+Depois execute:
+
+```bash
+chmod +x ~/.local/share/applications/mvd.desktop
+```
+
+Agora a aplicação aparece no menu do sistema.
+
+---
+
+## 3. Como Executar no Windows
+
+### 3.1. Basta clicar duas vezes
+
+No Windows, o executável funciona imediatamente:
+
+* `main_mvd_interface.exe`
+* `main_compilador_interface.exe`
+
+### Possíveis bloqueios
+
+O Windows pode perguntar:
+
+> "Este aplicativo não é reconhecido. Deseja executar mesmo assim?"
+
+Clique em **Executar mesmo assim**.
+
+---
+
+## 4. Onde colocar os arquivos
+
+Você pode colocar os executáveis em qualquer pasta. Porém, recomenda-se:
+
+```
+/MeuCompilador
+ ├─ main_compilador_interface
+ ├─ main_mvd_interface
+ ├─ exemplos/
+ └─ output/   (mvd irá carregar arquivos .obj daqui)
+```
+
+A MVD lê qualquer `.obj` que você gerar com o compilador.
+
+---
+
+## 5. Como Usar os Executáveis
+
+### 5.1. Para compilar (main_compilador_interface)
+
+1. Abra o executável
+2. Escreva ou carregue um arquivo `.txt` com seu código
+3. Clique **Compilar**
+4. Se não houver erros → arquivo `.obj` é criado em `output/`
+
+### 5.2. Para executar um programa na MVD (main_mvd_interface)
+
+1. Abra o executável
+2. Clique **Carregar Arquivo (.obj)**
+3. Selecione o assembly gerado
+4. Execute:
+
+   * **Executar** → roda tudo
+   * **Passo-a-passo** → depuração
+
+---
+
+## 6. Compatibilidade
+
+* Funciona em **qualquer Linux x64**
+* Funciona em **qualquer Windows x64**
+* Não precisa instalar Python
+* Não precisa configurar ambiente
+
+---
+
+## 7. Observações Importantes
+
+* Tkinter já está embutido no executável
+* Não há necessidade de rodar via terminal
+* Apenas garanta permissões de execução no Linux
+* No Windows, apenas clique
+
+---
+
+## 8. Conclusão
+
+Com esses executáveis, qualquer usuário consegue:
+
+* Abrir o compilador
+* Editar um programa
+* Compilar para `.obj`
+* Abrir na MVD
+* Executar e depurar
+
+**Sem instalar nada além do próprio executável.**
+
 
 # 10. Como Usar o Compilador
 
